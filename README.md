@@ -1,2 +1,2 @@
-~/ot_harjoitustyo/dokumentaatio/vaatimusmaarittely.md
+ot_harjoitustyo/dokumentaatio/vaatimusmaarittely.md
 
