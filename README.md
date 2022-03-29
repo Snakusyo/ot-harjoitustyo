@@ -1,2 +1,1 @@
-ot_harjoitustyo/dokumentaatio/vaatimusmaarittely.md
-
+[Vaatimusmaarittely](https://github.com/Snakusyo/ot-harjoitustyo/blob/master/dokumentaatio/vaatimusmaarittely.md)
