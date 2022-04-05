@@ -48,22 +48,46 @@ class StrategyGame():
         #will be included later
         pass
 
-    def new_game(self, map: list):
+    def new_game(self):
 
         #this function will reset all in game statistics and values
-        #the map is used to call the start_game function
+        #now the player chooses their name, map, and other properties of the new game
+        #after this the start_game function is called
         pass
 
-    def start_game(self):
+    def load_game(self):
 
+        #this function will set in game statistics and values to those of a saved game
+        #this information is read from a savefile created through the save_game method
+        #after this the start_game function is called normally
+        pass
+
+    def save_game(self):
+
+        #this saves the current game
+        #game information is extracted into a file that can be accessed by the load_game method
+        pass
+
+    def start_game(self, map: list, player: dict):
+
+        #map is loaded into the game with the create_map function
+        #state determines if a new game is started, or a game is loaded
+        #player information is entered in a dictionary
+        #this includes information such as player name, balance, buildings owned etc.
         pass
 
     def update_screen(self):
 
+        #what ever happens on the screen is drawn here
+        
         self.screen.fill((0,0,0))
         pygame.display.flip()
 
+
+
     def events(self):
+
+        #events such as player input are tracked here
 
         for event in pygame.event.get():
 
@@ -72,15 +96,16 @@ class StrategyGame():
 
     def create_map(self, map: list):
         
+        #map information is extracted from an array and converted into Tile class objects
+
         self.map = []
 
         for row in map:
+            newrow = []
             for item in row:
-                item = Tile(item)
+                newrow.append(Tile(item))
+            self.map.append(newrow)
 
-        for value in self.map:
-            for thing in value:
-                print(thing)
 
 
     def get_production(self):
@@ -103,10 +128,21 @@ class StrategyGame():
         #camera can be moved up, down, left or right
         pass
 
-    def draw_tile(self, tile: Tile):
+    def draw_tile(self, tile: Tile, x: int, y: int):
         
         #the map tiles are drawn here
-        pass
+        #colours are placeholders for final graphic
+        
+        if tile.terrain == 0:
+            colour = (0,0,255)
+        if tile.terrain == 1:
+            colour = (0,255,0)
+        if tile.terrain == 2:
+            colour = (155,155,155)
+
+        tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, 16, 16))
+
+        return tile_graphic
 
     def draw_ui(self):
 

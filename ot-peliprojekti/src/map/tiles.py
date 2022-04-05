@@ -26,4 +26,4 @@ class Tile():
 
     def __str__(self):
         
-        return "Tile: {self.terrain}"
+        return f"Tile: {self.terrain}"
