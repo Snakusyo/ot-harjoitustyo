@@ -1,6 +1,10 @@
 import pygame
 from pygame.locals import *
+from pyrfc3339 import generate
 from map.tiles import Tile
+from random import randint
+
+from mapmaker.mapmaker import generate_map
 
 class StrategyGame():
 
@@ -10,37 +14,50 @@ class StrategyGame():
 
         pygame.init()
         
+        #this is placeholder for resolution and tilesize
+        self.resx = 1280
+        self.resy = 720
+        self.tilesize = 16
+
+        #this is placeholder for camera
+        self.camera_position = [10, 10]
+        self.camera_right, self.camera_down, self.camera_left, self.camera_up = False, False, False, False
+
         self.font_arial = pygame.font.SysFont("Arial", 22)
         self.game_clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((1280,720))
+        self.screen = pygame.display.set_mode((self.resx,self.resy))
 
         pygame.display.set_caption("ot-peliprojekti")
 
 
         #everything under this is currently for testing purposes only
-        
-        self.map_info = [\
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], \
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] \
-                ]
+        self.map = []
+        self.mapsize = 128
+        self.map_info = generate_map(self.mapsize)
 
         self.create_map(self.map_info)
         self.main_loop()
 
+    def generate_map(self, size: int):
+
+        #this method is only for testing purposes at the moment
+        #it will generate map info as a list
+
+        maplist = []
+
+        for i in range(size):
+
+            maprow = []
+            for u in range(size):
+                if i == 0 or i == (size-1):
+                    maprow.append(0)
+                elif u == 0 or u == (size-1):
+                    maprow.append(0)
+
+                else:
+                    maprow.append(1)
+
+        return maplist
 
     def main_menu(self):
 
@@ -81,7 +98,24 @@ class StrategyGame():
         #what ever happens on the screen is drawn here
         
         self.screen.fill((0,0,0))
+
+        row = self.camera_position[0]
+        for i in range(int(self.resx/self.tilesize)):
+            tile = self.camera_position[1]
+            
+            for u in range(int(self.resy/self.tilesize)):
+                
+                #draw the tiles based on the camera position
+                #camera position is defined by what tiles are shown on screen
+                self.draw_tile(self.map[row][tile], i*self.tilesize, u*self.tilesize)
+                tile += 1
+
+            row += 1
+
         pygame.display.flip()
+        self.game_clock.tick(60)
+
+
 
 
 
@@ -92,19 +126,54 @@ class StrategyGame():
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
+                pygame.quit()
                 exit()
+
+            if event.type == pygame.KEYDOWN:
+
+                #camera movement keys here
+                if event.key == pygame.K_UP:
+                    self.camera_up = True
+                if event.key == pygame.K_DOWN:
+                    self.camera_down = True
+                if event.key == pygame.K_LEFT:
+                    self.camera_left = True
+                if event.key == pygame.K_RIGHT:
+                    self.camera_right = True
+
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    self.camera_up = False
+                if event.key == pygame.K_DOWN:
+                    self.camera_down = False
+                if event.key == pygame.K_LEFT:
+                    self.camera_left = False
+                if event.key == pygame.K_RIGHT:
+                    self.camera_right = False
+
+
+        if self.camera_up:
+            self.move_camera("up")
+        if self.camera_down:
+            self.move_camera("down")
+        if self.camera_left:
+            self.move_camera("left")
+        if self.camera_right:
+            self.move_camera("right")
+
 
     def create_map(self, map: list):
         
         #map information is extracted from an array and converted into Tile class objects
 
-        self.map = []
 
         for row in map:
             newrow = []
             for item in row:
                 newrow.append(Tile(item))
             self.map.append(newrow)
+
+        
 
 
 
@@ -126,7 +195,14 @@ class StrategyGame():
     def move_camera(self, direction: str):
 
         #camera can be moved up, down, left or right
-        pass
+        if direction == "up" and self.camera_position[1] > 0:
+            self.camera_position[1] -= 1
+        if direction == "down" and self.camera_position[1] < self.mapsize-self.resy/self.tilesize:
+            self.camera_position[1] += 1
+        if direction == "left" and self.camera_position[0] > 0:
+            self.camera_position[0] -= 1
+        if direction == "right" and self.camera_position[0] < self.mapsize-self.resx/self.tilesize:
+            self.camera_position[0] += 1
 
     def draw_tile(self, tile: Tile, x: int, y: int):
         
@@ -140,7 +216,7 @@ class StrategyGame():
         if tile.terrain == 2:
             colour = (155,155,155)
 
-        tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, 16, 16))
+        tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, self.tilesize, self.tilesize))
 
         return tile_graphic
 

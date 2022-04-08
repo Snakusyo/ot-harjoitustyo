@@ -8,6 +8,7 @@
 
 #Tiles will be added to an array upon starting a game
 #The game map will be created and updated based on the values in each tile
+from objects.buildings import Building
 
 class Tile():
 
@@ -19,10 +20,13 @@ class Tile():
         # 2 = rock
         #more added later
         self.terrain = terrain
-        #this includes both building type and rotation of the building
-        self.building = (None, None)
+        #this is the building type, subtype and specialization
+        self.building = (None, None, None)
 
-    #new functions added later
+    def add_building(self, object: Building):
+
+        #this will be called when a building is placed on a tile
+        pass
 
     def __str__(self):
         
