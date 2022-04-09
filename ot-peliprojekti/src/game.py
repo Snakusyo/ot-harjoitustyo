@@ -1,10 +1,7 @@
 import pygame
 from pygame.locals import *
-from pyrfc3339 import generate
 from map.tiles import Tile
 from random import randint
-
-from mapmaker.mapmaker import generate_map
 
 class StrategyGame():
 
@@ -33,7 +30,7 @@ class StrategyGame():
         #everything under this is currently for testing purposes only
         self.map = []
         self.mapsize = 128
-        self.map_info = generate_map(self.mapsize)
+        self.map_info = self.generate_map(self.mapsize)
 
         self.create_map(self.map_info)
         self.main_loop()
@@ -57,7 +54,9 @@ class StrategyGame():
                     maprow.append(0)
 
                 else:
-                    maprow.append(1)
+                    maprow.append(randint(0,1))
+
+            maplist.append(maprow)
 
         return maplist
 
