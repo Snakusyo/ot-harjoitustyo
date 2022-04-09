@@ -50,8 +50,10 @@ class StrategyGame():
             maprow = []
             for u in range(size):
                 if i == 0 or i == (size-1):
+                    print(i)
                     maprow.append(0)
                 elif u == 0 or u == (size-1):
+                    print(u)
                     maprow.append(0)
 
                 else:
