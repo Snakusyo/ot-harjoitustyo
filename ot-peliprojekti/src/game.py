@@ -57,7 +57,7 @@ class StrategyGame():
                     maprow.append(0)
 
                 else:
-                    maprow.append(0)
+                    maprow.append(1)
 
         return maplist
 
