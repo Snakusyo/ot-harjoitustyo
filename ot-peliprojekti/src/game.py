@@ -19,6 +19,10 @@ class StrategyGame():
         #this is placeholder for camera
         self.camera_position = [10, 10]
         self.camera_right, self.camera_down, self.camera_left, self.camera_up = False, False, False, False
+        
+        #set mouseover to false at first
+        #this will change when events are checked
+        self.mouseovertile, self.mouseoverui = False, False
 
         self.font_arial = pygame.font.SysFont("Arial", 22)
         self.game_clock = pygame.time.Clock()
@@ -44,17 +48,20 @@ class StrategyGame():
 
         for i in range(size):
 
+            #this first part makes sure the edge of the map is always water
             maprow = []
             for u in range(size):
                 if i == 0 or i == (size-1):
                     print(i)
                     maprow.append(0)
                 elif u == 0 or u == (size-1):
-                    print(u)
                     maprow.append(0)
 
                 else:
-                    maprow.append(randint(0,1))
+                    if len(maplist) % 2 == 0:
+                        maprow.append(1)
+                    else:
+                        maprow.append(0)
 
             maplist.append(maprow)
 
@@ -97,21 +104,28 @@ class StrategyGame():
     def update_screen(self):
 
         #what ever happens on the screen is drawn here
-        
+        self.tiles_on_screen = []
         self.screen.fill((0,0,0))
 
-        row = self.camera_position[0]
+        #define how tiles are pulled from the map (list)
+        tile = self.camera_position[0]
         for i in range(int(self.resx/self.tilesize)):
-            tile = self.camera_position[1]
+            screenrow = []
+            row = self.camera_position[1]
             
             for u in range(int(self.resy/self.tilesize)):
                 
                 #draw the tiles based on the camera position
+                #tiles are drawn from left to right and then from up to down
                 #camera position is defined by what tiles are shown on screen
                 self.draw_tile(self.map[row][tile], i*self.tilesize, u*self.tilesize)
-                tile += 1
-
-            row += 1
+                screenrow.append(self.map[row][tile])
+                row += 1
+            self.tiles_on_screen.append(screenrow)
+            tile += 1
+        if self.mouseovertile == True:
+            #highlight tile under the mouse cursor
+            self.highligh_tile(self.mouse_position[0], self.mouse_position[1])
 
         pygame.display.flip()
         self.game_clock.tick(60)
@@ -129,6 +143,8 @@ class StrategyGame():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            #player keyboard input is tracked here
 
             if event.type == pygame.KEYDOWN:
 
@@ -152,7 +168,22 @@ class StrategyGame():
                 if event.key == pygame.K_RIGHT:
                     self.camera_right = False
 
+            #mouse position is checked here
+            self.mouse_position = pygame.mouse.get_pos()
 
+            #placeholder to test ui functionality
+            #REMOVE
+
+            #if mouse position is on a tile, that tile should be highligted
+            if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
+                if self.mouse_position[1] < self.resx and self.mouse_position[0] < self.resy:
+                    self.mouseovertile = True
+
+
+
+        #check if player input is doing anything
+
+        #is the camera moving
         if self.camera_up:
             self.move_camera("up")
         if self.camera_down:
@@ -220,6 +251,22 @@ class StrategyGame():
         tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, self.tilesize, self.tilesize))
 
         return tile_graphic
+
+    def highligh_tile(self, mousex: float, mousey: float):
+        #this method is called when a tile on screen is under the mouse cursor
+        #it highlight that tile
+
+        tilex = int(mousex/self.tilesize)
+        tiley = int(mousey/self.tilesize)
+
+        line1 = pygame.draw.line(self.screen, (255,0,0), (tilex*self.tilesize, tiley*self.tilesize), (tilex*self.tilesize+16, tiley*self.tilesize))
+        line2 = pygame.draw.line(self.screen, (255,0,0), (tilex*self.tilesize, tiley*self.tilesize), (tilex*self.tilesize, tiley*self.tilesize+16))
+        line3 = pygame.draw.line(self.screen, (255,0,0), (tilex*self.tilesize, tiley*self.tilesize+16), (tilex*self.tilesize+16, tiley*self.tilesize+16))
+        line4 = pygame.draw.line(self.screen, (255,0,0), (tilex*self.tilesize+16, tiley*self.tilesize), (tilex*self.tilesize+16, tiley*self.tilesize+16))
+
+        highlight_graphic = [line1, line2, line3, line4]
+
+        return highlight_graphic  
 
     def draw_ui(self):
 
