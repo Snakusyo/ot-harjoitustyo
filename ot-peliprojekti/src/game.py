@@ -14,7 +14,7 @@ class StrategyGame():
         #this is placeholder for resolution and tilesize
         self.resx = 1280
         self.resy = 720
-        self.tilesize = 80
+        self.tilesize = 40
 
         #this is placeholder for camera
         self.camera_position = [10, 10]
@@ -270,8 +270,9 @@ class StrategyGame():
         line4 = pygame.draw.line(self.screen, (255,0,0), (tilex*self.tilesize+self.tilesize, tiley*self.tilesize), (tilex*self.tilesize+self.tilesize, tiley*self.tilesize+self.tilesize), width=linewidth)
 
         highlight_graphic = [line1, line2, line3, line4]
+        self.highlighted_tile = (tilex, tiley)
 
-        return highlight_graphic  
+        return highlight_graphic
 
     def draw_ui(self):
 
