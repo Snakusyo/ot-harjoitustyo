@@ -9,4 +9,4 @@
 | 7.4.  | 2    | Koodin kirjoittamista ja testaamista |
 | 9.4.  | 1    | Koodin kirjoittamista ja rakenteen uusimista |
 | 11.4. | 1    | Koodin rakenteen uusimista |
-| 12.4. |# 5#  | # Koodin kirjoittamista ja uuden rakenteen hiomista # |
+| 12.4. | 9    | Päävalikon alustus ja käyttöliittymän koodaamista |
