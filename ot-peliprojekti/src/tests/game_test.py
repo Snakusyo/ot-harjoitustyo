@@ -15,5 +15,3 @@ class TestStrategyGame(unittest.TestCase):
         self.assertEqual(len(map), self.mapdata)
 
 
-TestStrategyGame.test_map_is_correct_length()
-
