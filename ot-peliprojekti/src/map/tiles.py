@@ -12,7 +12,7 @@ from objects.buildings import Building
 
 class Tile():
 
-    def __init__(self, terrain: int):
+    def __init__(self, location: tuple, terrain: int):
 
         #this is the terrain type of the tile
         # 0 = water
@@ -20,6 +20,7 @@ class Tile():
         # 2 = rock
         #more added later
         self.terrain = terrain
+        self.location = location
         #this is the building type, subtype and specialization
         self.building = (None, None, None)
 
@@ -30,4 +31,4 @@ class Tile():
 
     def __str__(self):
         
-        return f"Tile: {self.terrain}"
+        return f"Tile: {self.location}"
