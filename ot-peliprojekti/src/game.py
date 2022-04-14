@@ -1,7 +1,9 @@
+from turtle import up
 import pygame
 from pygame.locals import *
 from map.tiles import Tile
 from random import randint
+from objects.buildings import Building
 
 class StrategyGame():
 
@@ -47,8 +49,8 @@ class StrategyGame():
         self.mgray = (100,100,100)
         self.dgray = (50,50,50)
         self.red = (255,0,0)
-        self.green = (0,255,0)
-        self.blue = (0,0,255)
+        self.green = (0,125,0)
+        self.blue = (0,0,180)
 
         #some default values for new game setup
         self.population_tier = 0
@@ -67,6 +69,7 @@ class StrategyGame():
         self.map_info = self.generate_map(self.mapsize)
 
         self.create_map(self.map_info)
+        self.load_buildings()
         self.buttons()
         self.tools()
         self.main_loop()
@@ -92,8 +95,51 @@ class StrategyGame():
                     maprow.append(randint(0,1))
             maplist.append(maprow)
 
-        print(maplist)
         return maplist
+
+    def load_buildings(self):
+
+        housesmall = Building("Small House", "house", 0, None)
+        housemedium = Building("Medium House", "house", 1, None)
+        houselarge = Building("Large House", "house", 2, None)
+
+        woodcutter = Building("Woodcutter", "gather", 1, 0)
+        woodcutter.set_production("Logs", 5)
+
+        mineiron = Building("Iron Mine", "gather", 2, 500)
+        mineiron.set_production("Iron", 15)
+        minecoal = Building("Coal Mine", "gather", 2, 500)
+        minecoal.set_production("Coal", 15)
+
+        farmgrain = Building("Grain Farm", "gather", 1, 200)
+        farmgrain.set_production("Grain", 30)
+        farmsheep = Building("Sheep Farm", "gather", 1, 100)
+        farmsheep.set_production("Wool", 30)
+
+        sawmill = Building("Sawmill", "produce", 1, 0)
+        sawmill.add_requirement("Logs", 1)
+        sawmill.set_production("Timber", 5)
+
+        knitter = Building("Knitter", "produce", 1, 100)
+        knitter.add_requirement("Wool", 1)
+        knitter.set_production("Clothing", 15)
+        millflour = Building("Flour Mill", "produce", 1, 200)
+        millflour.add_requirement("Grain", 1)
+        millflour.set_production("Flour", 15)
+        bakery = Building("Bakery", "produce", 1, 200)
+        bakery.add_requirement("Flour", 1)
+        bakery.set_production("Bread", 15)
+
+        furnace = Building("Furnace", "produce", 2, 500)
+        furnace.add_requirement("Coal", 2)
+        furnace.add_requirement("Iron", 2)
+        furnace.set_production("Steel", 30)
+
+        self.buildings = [\
+            housesmall, housemedium, houselarge, \
+                woodcutter, mineiron, minecoal, farmgrain, farmsheep, \
+                    sawmill, knitter, millflour, bakery, furnace]
+        
 
     def new_game(self):
 
@@ -147,11 +193,13 @@ class StrategyGame():
             tile += 1
         if self.mouseovertile:
             #highlight tile under the mouse cursor
-            self.highligh_tile(self.current_tile, self.white)
-
-        if self.current_tool:
-            if self.current_tool.is_active():
-                self.draw_tool(self.current_tool)
+            if self.current_tool != None:
+                if self.current_tool.button.is_active():
+                    self.highligh_tile(self.current_tile, self.current_tool.colour)
+                else:
+                    self.highligh_tile(self.current_tile, self.white)
+            else:
+                self.highligh_tile(self.current_tile, self.white)
 
         if self.menu_open:
             self.draw_menu(self.current_menu)
@@ -217,6 +265,13 @@ class StrategyGame():
                 if state[0]:
                     if self.mouseoverbutton:
                         self.current_button.click()
+
+                if state[2]:
+                    if self.menu_open:
+                        self.close_menu()
+                    elif self.current_tool != None:
+                        if self.current_tool.button.active:
+                            self.current_tool.button.click()
 
             #if mouse position is on a tile, that tile should be highligted
             if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
@@ -294,6 +349,11 @@ class StrategyGame():
                     self.menu_location = self.current_button.location
                 else:
                     self.close_menu()
+
+        #is a tool currently being used
+        for tool in self.player_tools:
+            if tool.button.active:
+                self.current_tool = tool
 
     def create_map(self, map: list):
         
@@ -497,10 +557,13 @@ class StrategyGame():
 
         build = GameTool("Build", 0)
         build.create_button((850, 660), (50,50))
+        build.set_colour((0,255,255))
         demolish = GameTool("Demolish", 0)
         demolish.create_button((910, 660), (50,50))
+        demolish.set_colour((255,128,0))
         upgrade = GameTool("Upgrade", 0)
         upgrade.create_button((970, 660),(50,50))
+        upgrade.set_colour((0,255,0))
 
         self.player_tools = [build, demolish, upgrade]
         for tool in self.player_tools:
@@ -560,11 +623,10 @@ class UIButton():
 
     def click(self):
 
-        if self.passive == False:
-            if self.active:
-                self.active = False
-            else:
-                self.active = True
+        if self.active:
+            self.active = False
+        else:
+            self.active = True
 
 
     def menu_addbutton(self, name: str, tier: int):
@@ -609,6 +671,7 @@ class GameTool():
         self.keybind = None
         self.keybind_text = None
         self.button = None
+        self.colour = None
     
     def click(self):
         if self.active == False:
@@ -618,6 +681,10 @@ class GameTool():
 
     def is_active(self):
         return self.active
+
+    def set_colour(self, colour: tuple):
+        #set the colour of the highlight when using tool
+        self.colour = colour
 
     def set_active(self, value: bool):
         self.active = value

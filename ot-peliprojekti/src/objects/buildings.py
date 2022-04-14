@@ -1,33 +1,36 @@
 #This program assigns properties and values to different building types in the game
 
-
 class Building():
 
-    def __init__(self, type: tuple):
+    def __init__(self, name: str, type: str, tier: int, pop: int):
 
-        #Different building types are defined by tuples
-        #The first value in the tuple is the building type
-
-        # 0 = Main Building
-        # 1 = Road
-        # 2 = House
-        # 3 = Gathering building (buildings that produce goods on their own)
-        # 4 = Production buildings (buildings that turn goods into other goods)
-        # 5 = Service buildings
-
-        #The second value in the tuple is the subtype of that building
-
-        #The third value is only for buildings that can have multiple properties, such as mines and farms. If the third value is not stated, it will be a 0
-
-
-        self.type = type[0]
-        self.subtype = type[1]
-
-        if type[2] == None:
-            self.spectype = 0
+        self.name = name
+        #houses are the only buildings the player can upgrade FOR NOW
+        if type == "house":
+            self.canup = True
         else:
-            self.spectype = type[2]
+            self.canup = False
+        #determines what tier the building unlocks in
+        self.tier = tier
+        #determine how many people needed to unlock building
+        #None for houses
+        self.population_need = pop
+        self.goodneeds = []
+        self.production = None
 
+
+    def set_production(self, name: str, time: int):
+        #name of product and time (in seconds) it takes to produce
+        self.production = (name, time)
+
+    def set_balance(self, value: int):
+        #value for how much does the building make or take money
+        #houses will have positive values, while most other buildings have negative
+        pass
+
+    def add_requirement(self, good: str, amount: int):
+        #set how many and what goods the building requires to produce goods
+        self.goodneeds.append((good, amount))
 
     def gather_goods(self, workforce: bool):
 
@@ -42,8 +45,16 @@ class Building():
         #If number of materials and/or workforce is insufficient, production will be 0
         pass
 
+
     def tax_residents(self):
 
         #This will tax residents in houses
         #House level and available goods/services will be used to calculate tax income
         pass
+
+    def building_graphic(self, image: str):
+        pass
+
+    def __str__(self):
+
+        return f"Building: {self.name}"
