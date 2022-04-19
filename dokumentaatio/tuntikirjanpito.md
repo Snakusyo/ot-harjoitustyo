@@ -10,3 +10,5 @@
 | 9.4.  | 1    | Koodin kirjoittamista ja rakenteen uusimista |
 | 11.4. | 1    | Koodin rakenteen uusimista |
 | 12.4. | 9    | Päävalikon alustus ja käyttöliittymän koodaamista |
+| 15.4. | 2    | Työkalujen alustus |
+| 19.4. | 10   | Grafiikan testausta ja työkalujen säätöä |
