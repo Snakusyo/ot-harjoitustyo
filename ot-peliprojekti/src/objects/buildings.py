@@ -17,7 +17,9 @@ class Building():
         self.population_need = pop
         self.goodneeds = []
         self.production = None
-
+        self.gametool = None
+        self.graphic = None
+        self.type = type
 
     def set_production(self, name: str, time: int):
         #name of product and time (in seconds) it takes to produce
@@ -27,6 +29,9 @@ class Building():
         #value for how much does the building make or take money
         #houses will have positive values, while most other buildings have negative
         pass
+
+    def set_graphic(self, filename: str):
+        self.graphic = filename
 
     def add_requirement(self, good: str, amount: int):
         #set how many and what goods the building requires to produce goods
@@ -50,9 +55,6 @@ class Building():
 
         #This will tax residents in houses
         #House level and available goods/services will be used to calculate tax income
-        pass
-
-    def building_graphic(self, image: str):
         pass
 
     def __str__(self):

@@ -1,8 +1,10 @@
+from tracemalloc import start
 from turtle import up
 import pygame
 from pygame.locals import *
 from map.tiles import Tile
 from random import randint
+from random import choice
 from objects.buildings import Building
 
 class StrategyGame():
@@ -41,6 +43,7 @@ class StrategyGame():
         self.ui_menu_buttons = []
         self.current_tool = None
         self.current_tile = None
+        self.current_tool_building = None
 
         #setup default colours
         self.black = (0,0,0)
@@ -68,6 +71,7 @@ class StrategyGame():
         self.mapsize = 128
         self.map_info = self.generate_map(self.mapsize)
 
+        self.load_graphics()
         self.create_map(self.map_info)
         self.load_buildings()
         self.buttons()
@@ -97,10 +101,23 @@ class StrategyGame():
 
         return maplist
 
+    def load_graphics(self):
+        grass1 = pygame.image.load("src/images/grass1.png")
+        grass2 = pygame.image.load("src/images/grass2.png")
+        grass3 = pygame.image.load("src/images/grass3.png")
+        grass4 = pygame.image.load("src/images/grass4.png")
+        self.graphics_grass = [grass1, grass2, grass3, grass4]
+        ocean1 = pygame.image.load("src/images/ocean1.png")
+        ocean2 = pygame.image.load("src/images/ocean2.png")
+        ocean3 = pygame.image.load("src/images/ocean3.png")
+        self.graphics_ocean = [ocean1, ocean2, ocean3]
+
     def load_buildings(self):
 
         housesmall = Building("Small House", "house", 0, None)
+        housesmall.set_graphic(pygame.image.load("src/images/housesmall.png"))
         housemedium = Building("Medium House", "house", 1, None)
+        housemedium.set_graphic(pygame.image.load("src/images/housemedium.png"))
         houselarge = Building("Large House", "house", 2, None)
 
         woodcutter = Building("Woodcutter", "gather", 1, 0)
@@ -186,20 +203,23 @@ class StrategyGame():
                 #draw the tiles based on the camera position
                 #tiles are drawn from left to right and then from up to down
                 #camera position is defined by what tiles are shown on screen
-                self.draw_tile(self.map[row][tile], i*self.tilesize, u*self.tilesize)
-                screenrow.append(self.map[row][tile])
+                #self.draw_tile(self.map[row][tile], i*self.tilesize, u*self.tilesize)
+                #screenrow.append(self.map[row][tile])
+
+                self.draw_tile(self.map[tile][row], i*self.tilesize, u*self.tilesize)
+                screenrow.append(self.map[tile][row])
                 row += 1
             self.tiles_on_screen.append(screenrow)
             tile += 1
         if self.mouseovertile:
             #highlight tile under the mouse cursor
             if self.current_tool != None:
-                if self.current_tool.button.is_active():
-                    self.highligh_tile(self.current_tile, self.current_tool.colour)
+                if self.current_tool.active:
+                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour)
                 else:
-                    self.highligh_tile(self.current_tile, self.white)
+                    self.highlight_tile(self.current_tile, self.white)
             else:
-                self.highligh_tile(self.current_tile, self.white)
+                self.highlight_tile(self.current_tile, self.white)
 
         if self.menu_open:
             self.draw_menu(self.current_menu)
@@ -245,6 +265,13 @@ class StrategyGame():
                     self.camera_left = True
                 if event.key == self.keybind_right:
                     self.camera_right = True
+                if event.key == K_t:
+                    print(f"current tool: {self.current_tool}")
+                    print(f"building: {self.current_tool_building}")
+                if event.key == K_y:
+                    print(f"Tile Info: \n \
+                    Terrain = {self.current_tile.terrain} \n \
+                        Building = {self.current_tile.building}")
 
             if event.type == pygame.KEYUP:
                 if event.key == self.keybind_up:
@@ -260,18 +287,36 @@ class StrategyGame():
             self.mouse_position = pygame.mouse.get_pos()
 
 
+            #mouse click is checked here
             if event.type == pygame.MOUSEBUTTONDOWN:
                 state = pygame.mouse.get_pressed()
                 if state[0]:
+                    #if a button is clicked
                     if self.mouseoverbutton:
                         self.current_button.click()
+                    #if a tile is clicked
+                    elif self.mouseovertile:
+                        if self.menu_open:
+                            self.close_menu()
+                        #if the build tool is active
+                        if self.current_tool != None:
+                            if self.current_tool.name == "Build":
+                                self.build(self.current_tool_building)
+                            if self.current_tool.name == "Demolish":
+                                self.current_tile.empty()
+                            if self.current_tool.name == "Upgrade":
+                                if self.current_tile.housetier == 0:
+                                    self.current_tile.upgrade(self.buildings[1])
+                                #elif self.current_tile.housetier == 1:
+                                    #self.current_tile.upgrade(self.buildings[2])
 
+            #right click will close menus and exit tools
                 if state[2]:
                     if self.menu_open:
                         self.close_menu()
                     elif self.current_tool != None:
-                        if self.current_tool.button.active:
-                            self.current_tool.button.click()
+                        self.current_tool.set_active(False)
+                        self.current_tool = None
 
             #if mouse position is on a tile, that tile should be highligted
             if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
@@ -324,6 +369,7 @@ class StrategyGame():
                     else:
                         self.mouseoverbutton = False
                         self.tooltip_active = False
+            
 
 
 
@@ -347,13 +393,13 @@ class StrategyGame():
                 if self.current_button.is_active():
                     self.open_menu(self.current_button.menu)
                     self.menu_location = self.current_button.location
-                else:
-                    self.close_menu()
+            elif self.current_button.type == "tool":
+                if self.current_button.tool != None:
+                    self.current_tool = self.current_button.tool
+            elif self.current_button.type == "building":
+                self.current_tool_building = self.current_button.building
+                self.current_tool = self.player_tools[2]
 
-        #is a tool currently being used
-        for tool in self.player_tools:
-            if tool.button.active:
-                self.current_tool = tool
 
     def create_map(self, map: list):
         
@@ -363,10 +409,24 @@ class StrategyGame():
             newrow = []
             x = 0
             for item in row:
-                newrow.append(Tile((x, y), item))
+                newtile = Tile((x, y), item)
+                if newtile.terrain == 0:
+                    newtile.set_graphic(choice(self.graphics_ocean))
+                if newtile.terrain == 1:
+                    newtile.set_graphic(choice(self.graphics_grass))
+                newrow.append(newtile)
+
                 x += 1
             y += 1
             self.map.append(newrow)
+
+    def build(self, building: Building):
+        #build selected building to selected tile
+        tile = self.current_tile
+        if tile.terrain == 1 and tile.building == None:
+            tile.add_building(building)
+        else:
+            pass
 
     def get_production(self):
         
@@ -398,18 +458,15 @@ class StrategyGame():
     def draw_tile(self, tile: Tile, x: int, y: int):
         
         #the map tiles are drawn here
-        #colours are placeholders for final graphic
         
-        if tile.terrain == 0:
-            colour = self.blue
-        if tile.terrain == 1:
-            colour = self.green
-        if tile.terrain == 2:
-            colour = self.dgray
+        graphic = tile.graphic
 
-        tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, self.tilesize, self.tilesize))
+        #tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, self.tilesize, self.tilesize))
+        tile_graphic = self.screen.blit(graphic, (x, y))
+        if tile.building != None:
+            building_graphic = self.screen.blit(tile.building.graphic, (x, y))
 
-    def highligh_tile(self, tile: Tile, colour: tuple):
+    def highlight_tile(self, tile: Tile, colour: tuple):
         #this method is called when a tile on screen needs to be highlighted
 
         linewidth = 3
@@ -446,7 +503,7 @@ class StrategyGame():
         road = UIButton("Road", (500, 640), (70,70), "main")
         road.menu_addbutton("Dirt Road", 0)
         houses = UIButton("Houses", (580, 640), (70,70), "main")
-        houses.menu_addbutton("House", 0)
+        houses.menu_addbutton("Small House", 0)
         gathering = UIButton("Gathering", (660, 640), (70,70), "main")
         gathering.menu_addbutton("Woodcutter", 0)
         gathering.menu_addbutton("Grain Farm", 1)
@@ -534,8 +591,12 @@ class StrategyGame():
         for item in menu:
             if item[1] >= self.population_tier:
                 #create a new button for the ui to recognize
-                new_button = UIButton(item[0], (x,y), (70,70), "sub")
+                new_button = UIButton(item[0], (x,y), (70,70), "building")
+                for building in self.buildings:
+                    if building.name == item[0]:
+                        new_button.set_building(building)
                 self.ui_menu_buttons.append(new_button)
+                new_button.set_tool(self.player_tools[2])
                 y += 80
         
 
@@ -552,35 +613,53 @@ class StrategyGame():
         #opens a new window in game
         pass
 
+    def tool_highlight_tile(self, tile: Tile, colour: tuple):
+        #if a tool is selected, the highlighting of tiles will be different
+        linewidth = 3
+        s = self.tilesize
+        x = tile.location[1]-self.camera_position[0]
+        y = tile.location[0]-self.camera_position[1]
+
+        line1 = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s, y*s), width=linewidth)
+        line2 = pygame.draw.line(self.screen, colour, (x*s, y*s),(x*s, y*s+s), width=linewidth)
+        line3 = pygame.draw.line(self.screen, colour, (x*s, y*s+s),(x*s+s, y*s+s),width=linewidth)
+        line4 = pygame.draw.line(self.screen, colour, (x*s+s, y*s),(x*s+s, y*s+s),width=linewidth)
+
+        #this is used to calculate points for the lines that fill the tile
+        variable = 2
+
+        #their starting point is upleft and their end point is downright
+        #splitline splits the tile from (x,y) to (x+tilesize, y+tilesize)
+        splitline = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s, y*s+s), width=1)
+        for line in range(int(s/2)):
+            pygame.draw.line(self.screen, colour, (x*s+variable, y*s), (x*s+s, y*s+s-variable), width=1)
+            pygame.draw.line(self.screen, colour, (x*s, y*s+s-variable), (x*s+variable, y*s+s), width=1)
+            variable += 2
+
+
     def tools(self):
         #game tools defined here
 
         build = GameTool("Build", 0)
-        build.create_button((850, 660), (50,50))
-        build.set_colour((0,255,255))
+        build.set_colour((0,0,255))
         demolish = GameTool("Demolish", 0)
-        demolish.create_button((910, 660), (50,50))
+        demolish.create_button((910, 660), (50,50), "tool")
+        demolish.button.set_tool(demolish)
         demolish.set_colour((255,128,0))
         upgrade = GameTool("Upgrade", 0)
-        upgrade.create_button((970, 660),(50,50))
+        upgrade.create_button((970, 660),(50,50), "tool")
+        upgrade.button.set_tool(upgrade)
         upgrade.set_colour((0,255,0))
 
-        self.player_tools = [build, demolish, upgrade]
-        for tool in self.player_tools:
-            self.ui_buttons.append(tool.button)
+        self.player_tools = [demolish, upgrade, build]
+        self.ui_buttons.append(demolish.button)
+        self.ui_buttons.append(upgrade.button)
 
     def open_tool(self, tool):
         tool.set_active(True)
-
-    def draw_tool(self, tool):
-        #graphics for the selected tool
-
-        if self.current_tool == "build":
-            self.highligh_tile()
-        if self.current_tool == "demolish":
-            pass
-        if self.current_tool == "upgrade":
-            pass
+    
+    def close_tool(self, tool):
+        tool.set_active(False)
 
     def draw_ui(self):
 
@@ -590,13 +669,6 @@ class StrategyGame():
         if self.menu_open:
             for mbutton in self.ui_menu_buttons:
                 self.draw_button(mbutton)
-        for tool in self.player_tools:
-            self.draw_button(tool.button)
-
-    def flash_border(self, colour: tuple):
-
-        #highlights border in colour based on events such as errors or level ups
-        pass
 
     def main_loop(self):
 
@@ -604,6 +676,7 @@ class StrategyGame():
         while True:
             self.update_screen()
             self.events()
+
 
 class UIButton():
 
@@ -620,6 +693,8 @@ class UIButton():
         self.keybind = None
         self.keybind_text = None
         self.graphic = None
+        self.tool = None
+        self.building = None
 
     def click(self):
 
@@ -628,12 +703,26 @@ class UIButton():
         else:
             self.active = True
 
+        if self.type == "tool":
+            self.tool.set_active(True)
+        if self.type == "building":
+            self.tool.set_active(True)
+
+    def set_building(self, building: Building):
+        #sets a building to match a button
+        self.building = building
+
 
     def menu_addbutton(self, name: str, tier: int):
 
         #add a button to the pop up menu
-        #tier indicates at what population tier this button is unlocked
+        #tier indicates at what population tier
+        #this button is unlocked
         self.menu.append((name, tier))
+
+
+    def set_tool(self, tool):
+        self.tool = tool
 
     def set_graphic(self, image: str):
         #set an image to show on the button
@@ -673,12 +762,6 @@ class GameTool():
         self.button = None
         self.colour = None
     
-    def click(self):
-        if self.active == False:
-            self.set_active(True)
-        else:
-            self.set_active(False)
-
     def is_active(self):
         return self.active
 
@@ -693,8 +776,8 @@ class GameTool():
         self.keybind = key
         self.keybind_text = text
 
-    def create_button(self, location: tuple, size: tuple):
-        self.button = UIButton(self.name, location, size, "main")
+    def create_button(self, location: tuple, size: tuple, type: str):
+        self.button = UIButton(self.name, location, size, type)
 
     def __str__(self):
 

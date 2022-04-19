@@ -9,7 +9,6 @@
 #Tiles will be added to an array upon starting a game
 #The game map will be created and updated based on the values in each tile
 from objects.buildings import Building
-
 class Tile():
 
     def __init__(self, location: tuple, terrain: int):
@@ -21,13 +20,24 @@ class Tile():
         #more added later
         self.terrain = terrain
         self.location = location
-        #this is the building type, subtype and specialization
-        self.building = (None, None, None)
+        self.housetier = None
+        self.graphic = None
+        self.building = None
 
-    def add_building(self, object: Building):
+    def set_graphic(self, filename: str):
+        self.graphic = filename
 
-        #this will be called when a building is placed on a tile
-        pass
+    def add_building(self, building: Building):
+        self.building = building
+        if building.type == "house":
+            self.housetier = 0
+
+    def upgrade(self, building):
+        self.building = building
+        self.housetier += 1
+
+    def empty(self):
+        self.building = None
 
     def __str__(self):
         
