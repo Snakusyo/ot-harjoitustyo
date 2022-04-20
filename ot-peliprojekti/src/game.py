@@ -1,3 +1,4 @@
+from argparse import ONE_OR_MORE
 from tracemalloc import start
 from turtle import up
 import pygame
@@ -74,6 +75,7 @@ class StrategyGame():
         self.load_graphics()
         self.create_map(self.map_info)
         self.load_buildings()
+        self.load_roads()
         self.buttons()
         self.tools()
         self.main_loop()
@@ -96,7 +98,7 @@ class StrategyGame():
                     maprow.append(0)
 
                 else:
-                    maprow.append(randint(0,1))
+                    maprow.append(1)
             maplist.append(maprow)
 
         return maplist
@@ -111,6 +113,36 @@ class StrategyGame():
         ocean2 = pygame.image.load("src/images/ocean2.png")
         ocean3 = pygame.image.load("src/images/ocean3.png")
         self.graphics_ocean = [ocean1, ocean2, ocean3]
+        mountain1 = pygame.image.load("src/images/mountain1.png")
+        mountain2 = pygame.image.load("src/images/mountain2.png")
+        mountain3 = pygame.image.load("src/images/mountain3.png")
+        self.graphics_mountain = [mountain1, mountain2, mountain3]
+
+    def load_roads(self):
+        dirtroad = Building("Dirt Road", "road", 0, None)
+        self.buildings.append(dirtroad)
+        road_none = pygame.image.load("src/images/roadnone.png")
+        road_one_north = pygame.image.load("src/images/roadonen.png")
+        road_one_east = pygame.image.load("src/images/roadonee.png")
+        road_one_west = pygame.image.load("src/images/roadonew.png")
+        road_one_south = pygame.image.load("src/images/roadones.png")
+        road_two_straight_vertical = pygame.image.load("src/images/roadtwostraightv.png")
+        road_two_straight_horizontal = pygame.image.load("src/images/roadtwostraighth.png")
+        road_two_angle_northeast = pygame.image.load("src/images/roadtwoanglene.png")
+        road_two_angle_northwest = pygame.image.load("src/images/roadtwoanglenw.png")
+        road_two_angle_southeast = pygame.image.load("src/images/roadtwoanglese.png")
+        road_two_angle_southwest = pygame.image.load("src/images/roadtwoanglesw.png")
+        road_three_north = pygame.image.load("src/images/roadthreen.png")
+        road_three_east = pygame.image.load("src/images/roadthreee.png")
+        road_three_west = pygame.image.load("src/images/roadthreew.png")
+        road_three_south = pygame.image.load("src/images/roadthrees.png")
+        road_four = pygame.image.load("src/images/roadfour.png")
+
+        self.roads = {"solo": road_none, "north": road_one_north, "east": road_one_east, "west": road_one_west, "south": road_one_south, \
+            "vertical": road_two_straight_vertical, "horizontal": road_two_straight_horizontal, "northeast": road_two_angle_northeast,\
+                "northwest": road_two_angle_northwest, "southeast": road_two_angle_southeast, "southwest": road_two_angle_southwest, \
+                "tnorth": road_three_north, "teast": road_three_east, "twest": road_three_west, "tsouth": road_three_south, "cross": road_four}
+
 
     def load_buildings(self):
 
@@ -203,8 +235,6 @@ class StrategyGame():
                 #draw the tiles based on the camera position
                 #tiles are drawn from left to right and then from up to down
                 #camera position is defined by what tiles are shown on screen
-                #self.draw_tile(self.map[row][tile], i*self.tilesize, u*self.tilesize)
-                #screenrow.append(self.map[row][tile])
 
                 self.draw_tile(self.map[tile][row], i*self.tilesize, u*self.tilesize)
                 screenrow.append(self.map[tile][row])
@@ -271,7 +301,12 @@ class StrategyGame():
                 if event.key == K_y:
                     print(f"Tile Info: \n \
                     Terrain = {self.current_tile.terrain} \n \
-                        Building = {self.current_tile.building}")
+                        Building = {self.current_tile.building} \n \
+                            Location = {self.current_tile.location}")
+                if event.key == K_r:
+                    self.build_road(self.current_tile)
+                if event.key == K_h:
+                    print(self.roads["solo"])
 
             if event.type == pygame.KEYUP:
                 if event.key == self.keybind_up:
@@ -298,25 +333,42 @@ class StrategyGame():
                     elif self.mouseovertile:
                         if self.menu_open:
                             self.close_menu()
-                        #if the build tool is active
+                        #if the a tool is active
                         if self.current_tool != None:
                             if self.current_tool.name == "Build":
-                                self.build(self.current_tool_building)
+                                if self.current_tile.building == None:
+                                    self.build(self.current_tool_building)
                             if self.current_tool.name == "Demolish":
                                 self.current_tile.empty()
                             if self.current_tool.name == "Upgrade":
                                 if self.current_tile.housetier == 0:
                                     self.current_tile.upgrade(self.buildings[1])
-                                #elif self.current_tile.housetier == 1:
-                                    #self.current_tile.upgrade(self.buildings[2])
+                            if self.current_tool.name == "Build Road":
+                                self.build_road(self.current_tile)
+                        else:
+                            pass
+
+                    if self.current_button:
+                        if self.current_button.type == "main":
+                            if self.current_button.is_active():
+                                self.open_menu(self.current_button.menu)
+                                self.menu_location = self.current_button.location
+                        elif self.current_button.type == "tool":
+                            if self.current_button.tool != None:
+                                self.current_tool = self.current_button.tool
+                        elif self.current_button.type == "building":
+                            self.current_tool_building = self.current_button.building
+                            self.current_tool = self.player_tools[2]
+                        elif self.current_button.type == "road":
+                            self.current_tool_building = self.current_button.building
+                            self.current_tool = self.player_tools[3]
 
             #right click will close menus and exit tools
                 if state[2]:
                     if self.menu_open:
                         self.close_menu()
-                    elif self.current_tool != None:
-                        self.current_tool.set_active(False)
-                        self.current_tool = None
+                    if self.current_tool != None:
+                        self.close_tool()
 
             #if mouse position is on a tile, that tile should be highligted
             if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
@@ -348,9 +400,11 @@ class StrategyGame():
                         break
                     else:
                         self.mouseoverbutton = False
+                        self.current_button = None
                         self.tooltip_active = False
                 else:
                     self.mouseoverbutton = False
+                    self.current_button = None
                     self.tooltip_active = False
 
             #same for menu buttons
@@ -365,9 +419,11 @@ class StrategyGame():
                             break
                         else:
                             self.mouseoverbutton = False
+                            self.current_button = None
                             self.tooltip_active = False
                     else:
                         self.mouseoverbutton = False
+                        self.current_button = False
                         self.tooltip_active = False
             
 
@@ -387,18 +443,7 @@ class StrategyGame():
         if self.camera_right:
             self.move_camera("right")
 
-        #are windows or menus open
-        if self.current_button:
-            if self.current_button.type == "main":
-                if self.current_button.is_active():
-                    self.open_menu(self.current_button.menu)
-                    self.menu_location = self.current_button.location
-            elif self.current_button.type == "tool":
-                if self.current_button.tool != None:
-                    self.current_tool = self.current_button.tool
-            elif self.current_button.type == "building":
-                self.current_tool_building = self.current_button.building
-                self.current_tool = self.player_tools[2]
+
 
 
     def create_map(self, map: list):
@@ -414,6 +459,8 @@ class StrategyGame():
                     newtile.set_graphic(choice(self.graphics_ocean))
                 if newtile.terrain == 1:
                     newtile.set_graphic(choice(self.graphics_grass))
+                if newtile.terrain == 2:
+                    newtile.set_graphic(choice(self.graphics_mountain))
                 newrow.append(newtile)
 
                 x += 1
@@ -423,10 +470,102 @@ class StrategyGame():
     def build(self, building: Building):
         #build selected building to selected tile
         tile = self.current_tile
-        if tile.terrain == 1 and tile.building == None:
+        if tile.terrain == 1 and tile.building == None and tile.has_road() == False:
             tile.add_building(building)
         else:
             pass
+
+    def select_road(self, tile: Tile):
+
+        x, y = tile.location[0], tile.location[1]
+        #surrounding 4 tiles are checked for roads
+        north = self.check_for_road((x, y-1))
+        east = self.check_for_road((x+1, y))
+        west = self.check_for_road((x-1, y))
+        south = self.check_for_road((x, y+1))
+
+        surrounding_tiles = [north, west, east, south]
+        if surrounding_tiles.count(True) == 4:
+            #if all four tiles have road, full crossroads is chosen
+            road = self.roads["cross"]
+            return "cross"
+
+        elif surrounding_tiles.count(True) == 3:
+            #if three tiles have road, a t-crossing is chosen
+            #rotation of road is checked based on what tiles have road
+            #if a tile has no road, the rotation will face the opposite to that tile
+            if north == False:
+                road = self.roads["tsouth"]
+                return "tsouth"
+            elif south == False:
+                road = self.roads["tnorth"]
+                return "tnorth"
+            elif east == False:
+                road = self.roads["twest"]
+                return "twest"
+            elif west == False:
+                road = self.roads["teast"]
+                return "teast"
+
+        elif surrounding_tiles.count(True) == 2:
+            #if two tiles have road, a straight road or a 90 degree angle is chosen
+            #road type and rotation is checked based on what tiles have road
+            if north and south:
+                road = self.roads["vertical"]
+                return "vertical"
+            elif east and west:
+                road = road = self.roads["horizontal"]
+                return "horizontal"
+
+            elif north:
+                if west:
+                    road = self.roads["northwest"]
+                    return "northwest"
+                elif east:
+                    road = road = self.roads["northeast"]
+                    return "northeast"
+
+            elif south:
+                if west:
+                    road = self.roads["southwest"]
+                    return "southwest"
+                elif east:
+                    road = self.roads["southeast"]
+                    return "southeast"
+
+        elif surrounding_tiles.count(True) == 1:
+            #if only one surrounding tile has road, a deadend road is chosen
+            if north:
+                road = self.roads["north"]
+                return "north"
+            elif west:
+                road = self.roads["west"]
+                return "west"
+            elif east:
+                road = self.roads["east"]
+                return "east"
+            elif south:
+                road = self.roads["south"]
+                return "south"
+
+        if surrounding_tiles.count(True) == 0:
+            #if no surrounding tiles have road, a lonely little patch of road is chosen. Hopefully they'll have some friends soon!
+            road = self.roads["solo"]
+            return "solo"
+
+    def build_road(self, tile: Tile):
+        #builds a road on selected tile
+        road = self.select_road(tile)
+        print(road)
+        tile.place_road(road)
+
+
+    def check_for_road(self, location: tuple):
+        #checks tile for road based on tile location
+        for row in self.map:
+            for tile in row:
+                if tile.location == location:
+                    return tile.has_road()
 
     def get_production(self):
         
@@ -461,10 +600,13 @@ class StrategyGame():
         
         graphic = tile.graphic
 
-        #tile_graphic = pygame.draw.rect(self.screen, (colour), (x, y, self.tilesize, self.tilesize))
         tile_graphic = self.screen.blit(graphic, (x, y))
-        if tile.building != None:
-            building_graphic = self.screen.blit(tile.building.graphic, (x, y))
+        if tile.building != None and tile.building != "road":
+            self.screen.blit(tile.building.graphic, (x, y))
+        
+        elif tile.has_road():
+            self.screen.blit(self.roads[tile.road], (x, y))
+            
 
     def highlight_tile(self, tile: Tile, colour: tuple):
         #this method is called when a tile on screen needs to be highlighted
@@ -591,12 +733,18 @@ class StrategyGame():
         for item in menu:
             if item[1] >= self.population_tier:
                 #create a new button for the ui to recognize
-                new_button = UIButton(item[0], (x,y), (70,70), "building")
+                if item[0] == "Dirt Road":
+                    new_button = UIButton(item[0], (x,y), (70,70), "road")
+                    new_button.set_tool(self.player_tools[3])
+                    print(new_button.tool)
+                else:
+                    new_button = UIButton(item[0], (x,y), (70,70), "building")
+                    new_button.set_tool(self.player_tools[2])
                 for building in self.buildings:
                     if building.name == item[0]:
                         new_button.set_building(building)
                 self.ui_menu_buttons.append(new_button)
-                new_button.set_tool(self.player_tools[2])
+                
                 y += 80
         
 
@@ -642,6 +790,8 @@ class StrategyGame():
 
         build = GameTool("Build", 0)
         build.set_colour((0,0,255))
+        build_road = GameTool("Build Road", 0)
+        build_road.set_colour((0,255,255))
         demolish = GameTool("Demolish", 0)
         demolish.create_button((910, 660), (50,50), "tool")
         demolish.button.set_tool(demolish)
@@ -651,15 +801,17 @@ class StrategyGame():
         upgrade.button.set_tool(upgrade)
         upgrade.set_colour((0,255,0))
 
-        self.player_tools = [demolish, upgrade, build]
+        self.player_tools = [demolish, upgrade, build, build_road]
         self.ui_buttons.append(demolish.button)
         self.ui_buttons.append(upgrade.button)
 
     def open_tool(self, tool):
         tool.set_active(True)
-    
-    def close_tool(self, tool):
-        tool.set_active(False)
+
+    def close_tool(self):
+        for tool in self.player_tools:
+            tool.set_active(False)
+        self.current_tool = None
 
     def draw_ui(self):
 
@@ -706,6 +858,8 @@ class UIButton():
         if self.type == "tool":
             self.tool.set_active(True)
         if self.type == "building":
+            self.tool.set_active(True)
+        if self.type == "road":
             self.tool.set_active(True)
 
     def set_building(self, building: Building):
