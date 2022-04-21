@@ -23,13 +23,13 @@ class Tile():
         self.housetier = None
         self.graphic = None
         self.building = None
-        self.road = "noroad"
+        self.road = None
 
     def set_graphic(self, filename: str):
         self.graphic = filename
 
     def has_road(self):
-        if self.road == "noroad":
+        if self.road == None:
             return False
         else:
             return True
@@ -37,6 +37,12 @@ class Tile():
     def place_road(self, road: str):
         self.building = "road"
         self.road = road
+
+    def update_road(self, road: str):
+        if self.building == "road":
+            self.road = road
+        else:
+            pass
 
     def add_building(self, building: Building):
         self.building = building
@@ -49,6 +55,7 @@ class Tile():
 
     def empty(self):
         self.building = None
+        self.road = None
 
     def __str__(self):
         
