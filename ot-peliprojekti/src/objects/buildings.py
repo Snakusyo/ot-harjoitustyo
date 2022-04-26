@@ -20,22 +20,43 @@ class Building():
         self.gametool = None
         self.graphic = None
         self.type = type
+        self.road_graphic = None
+        self.size = 1
+        self.surface = 1
 
     def set_production(self, name: str, time: int):
         #name of product and time (in seconds) it takes to produce
         self.production = (name, time)
+
+    def set_surface(self, surface: int):
+        self.surface = surface
 
     def set_balance(self, value: int):
         #value for how much does the building make or take money
         #houses will have positive values, while most other buildings have negative
         pass
 
+    def set_size(self, value: int):
+        #set the size of the building
+        #this implies width and height in tiles
+        #NYI - may be implemented at a later time
+        self.size = value
+
     def set_graphic(self, filename: str):
+        #this is going to be a call from the main game
+        #the graphic here is pulled to be drawn on screen
         self.graphic = filename
+
+    def set_road_graphics(self, name: str):
+        #this name stands for the name of the graphics in a dictionary in the main game
+        self.road_graphic = name
 
     def add_requirement(self, good: str, amount: int):
         #set how many and what goods the building requires to produce goods
         self.goodneeds.append((good, amount))
+
+    def set_population_need(self, amount: int):
+        self.population_need = amount
 
     def gather_goods(self, workforce: bool):
 

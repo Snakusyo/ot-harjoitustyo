@@ -1,9 +1,11 @@
 from argparse import ONE_OR_MORE
 from tracemalloc import start
 from turtle import up
+from pkg_resources import yield_lines
 import pygame
 from pygame.locals import *
 from map.tiles import Tile
+from map.mapgenerator import MapGenerator
 from random import randint
 from random import choice
 from objects.buildings import Building
@@ -22,7 +24,6 @@ class StrategyGame():
         self.tilesize = 40
 
         #this is placeholder for camera
-        self.camera_position = [10, 10]
         self.camera_right, self.camera_down, self.camera_left, self.camera_up = False, False, False, False
 
         #keybindings are going in their own class in UI, these are placeholders
@@ -59,9 +60,18 @@ class StrategyGame():
 
         #some default values for new game setup
         self.population_tier = 0
+        self.seconds = 0
+        self.player_buildings = []
+        self.player_balance = 0
+        self.player_income = 0
+        self.player_population = {"Peasant": 0, "Worker": 0}
+        #this is probably not needed
+        self.player_production = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
+        self.player_goods = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
 
 
         self.font_arial = pygame.font.SysFont("Arial", 22)
+        self.font_arial_small = pygame.font.SysFont("Arial", 14)
         self.game_clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.resx,self.resy))
 
@@ -71,7 +81,10 @@ class StrategyGame():
         #everything under this is currently for testing purposes only
         self.map = []
         self.mapsize = 128
-        self.map_info = self.generate_map(self.mapsize)
+        self.map_template = MapGenerator(self.mapsize)
+        self.map_info = self.map_template.get_map()
+
+        self.camera_position = [int(self.mapsize/2), int(self.mapsize/2)]
 
         self.load_graphics()
         self.load_icons()
@@ -94,9 +107,9 @@ class StrategyGame():
             #this first part makes sure the edge of the map is always water
             maprow = []
             for u in range(size):
-                if i == 0 or i == (size-1):
+                if i <= 1 or i >= (size-2):
                     maprow.append(0)
-                elif u == 0 or u == (size-1):
+                elif u <= 1 or u >= (size-2):
                     maprow.append(0)
 
                 else:
@@ -125,8 +138,23 @@ class StrategyGame():
         houses = pygame.image.load("src/images/houses_icon.png")
         dirtroad = pygame.image.load("src/images/dirtroad_icon.png")
         housesmall = pygame.image.load("src/images/housesmall_icon.png")
+        demolish = pygame.image.load("src/images/demolish_icon.png")
+        upgrade = pygame.image.load("src/images/upgrade_icon.png")
+        woodcutter = pygame.image.load("src/images/woodcutter_icon.png")
+        sawmill = pygame.image.load("src/images/sawmill_icon.png")
+        sheepfarm = pygame.image.load("src/images/sheepfarm_icon.png")
+        grainfarm = pygame.image.load("src/images/grainfarm_icon.png")
+        coalmine = pygame.image.load("src/images/coalmine_icon.png")
+        ironmine = pygame.image.load("src/images/ironmine_icon.png")
+        furnace = pygame.image.load("src/images/furnace_icon.png")
+        knitter = pygame.image.load("src/images/knitter_icon.png")
+        windmill = pygame.image.load("src/images/windmill_icon.png")
+        bakery = pygame.image.load("src/images/bakery_icon.png")
 
-        self.ui_icons = {"Road": road, "Houses": houses, "Dirt Road": dirtroad, "Small House": housesmall}
+        self.ui_icons = {"Road": road, "Houses": houses, "Dirt Road": dirtroad, "Small House": housesmall, "Demolish": demolish, \
+                        "Upgrade": upgrade, "Woodcutter": woodcutter, "Sawmill": sawmill, "Sheep Farm": sheepfarm, "Grain Farm": grainfarm, \
+                        "Coal Mine": coalmine, "Iron Mine": ironmine, "Furnace": furnace, "Knitter": knitter, "Windmill": windmill, \
+                        "Bakery": bakery}
 
     def load_roads(self):
         dirtroad = Building("Dirt Road", "road", 0, None)
@@ -164,35 +192,47 @@ class StrategyGame():
 
         woodcutter = Building("Woodcutter", "gather", 1, 0)
         woodcutter.set_production("Logs", 5)
+        woodcutter.set_graphic(pygame.image.load("src/images/woodcutter.png"))
 
         mineiron = Building("Iron Mine", "gather", 2, 500)
         mineiron.set_production("Iron", 15)
+        mineiron.set_surface(2)
+        mineiron.set_graphic(pygame.image.load("src/images/ironmine.png"))
         minecoal = Building("Coal Mine", "gather", 2, 500)
         minecoal.set_production("Coal", 15)
+        minecoal.set_surface(2)
+        minecoal.set_graphic(pygame.image.load("src/images/coalmine.png"))
 
         farmgrain = Building("Grain Farm", "gather", 1, 200)
         farmgrain.set_production("Grain", 30)
+        farmgrain.set_graphic(pygame.image.load("src/images/grainfarm.png"))
         farmsheep = Building("Sheep Farm", "gather", 1, 100)
         farmsheep.set_production("Wool", 30)
+        farmsheep.set_graphic(pygame.image.load("src/images/sheepfarm.png"))
 
         sawmill = Building("Sawmill", "produce", 1, 0)
         sawmill.add_requirement("Logs", 1)
         sawmill.set_production("Timber", 5)
+        sawmill.set_graphic(pygame.image.load("src/images/sawmill.png"))
 
         knitter = Building("Knitter", "produce", 1, 100)
         knitter.add_requirement("Wool", 1)
         knitter.set_production("Clothing", 15)
-        millflour = Building("Flour Mill", "produce", 1, 200)
+        knitter.set_graphic(pygame.image.load("src/images/knitter.png"))
+        millflour = Building("Windmill", "produce", 1, 200)
         millflour.add_requirement("Grain", 1)
         millflour.set_production("Flour", 15)
+        millflour.set_graphic(pygame.image.load("src/images/windmill.png"))
         bakery = Building("Bakery", "produce", 1, 200)
         bakery.add_requirement("Flour", 1)
         bakery.set_production("Bread", 15)
+        bakery.set_graphic(pygame.image.load("src/images/bakery.png"))
 
         furnace = Building("Furnace", "produce", 2, 500)
         furnace.add_requirement("Coal", 2)
         furnace.add_requirement("Iron", 2)
         furnace.set_production("Steel", 30)
+        furnace.set_graphic(pygame.image.load("src/images/furnace.png"))
 
         self.buildings = [\
             housesmall, housemedium, houselarge, \
@@ -255,7 +295,7 @@ class StrategyGame():
             #highlight tile under the mouse cursor
             if self.current_tool != None:
                 if self.current_tool.active:
-                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour)
+                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour, self.current_tool_building.size)
                 else:
                     self.highlight_tile(self.current_tile, self.white)
             else:
@@ -267,11 +307,12 @@ class StrategyGame():
         if self.mouseoverbutton: 
             self.highlight_button(self.current_button)   
         if self.tooltip_active:
-            self.draw_tooltip(self.current_button.name)
-        
+            self.draw_tooltip(self.current_button.tooltip)
+
 
         pygame.display.flip()
         self.game_clock.tick(60)
+        self.seconds += 1/60
 
 
 
@@ -371,6 +412,7 @@ class StrategyGame():
                         elif self.current_button.type == "building":
                             self.current_tool_building = self.current_button.building
                             self.current_tool = self.player_tools[2]
+                            self.close_menu()
                         elif self.current_button.type == "road":
                             self.current_tool_building = self.current_button.building
                             self.current_tool = self.player_tools[3]
@@ -638,7 +680,16 @@ class StrategyGame():
     def topbar(self):
 
         #top bar in the UI, this is where player and city statistics are displayed
-        pass
+        topbar_backround1 = pygame.draw.rect(self.screen, self.dgray, (440, 0, 400, 74))
+        topbar_backround2 = pygame.draw.rect(self.screen, self.mgray, (444, 0, 392, 70))
+        topbar_foreground = pygame.draw.rect(self.screen, self.lgray, (448, 0, 384, 66))
+
+        topbar = [topbar_backround1, topbar_backround2, topbar_foreground]
+
+        #define statistics to be shown
+
+
+        return topbar
 
     def buttons(self):
 
@@ -650,18 +701,37 @@ class StrategyGame():
         houses.menu_addbutton("Small House", 0)
         houses.set_graphic(self.ui_icons["Houses"])
         gathering = UIButton("Gathering", (660, 640), (70,70), "main")
+        gathering.set_graphic(self.ui_icons["Woodcutter"])
         gathering.menu_addbutton("Woodcutter", 0)
         gathering.menu_addbutton("Grain Farm", 1)
         gathering.menu_addbutton("Sheep Farm", 0)
         gathering.menu_addbutton("Iron Mine", 1)
         gathering.menu_addbutton("Coal Mine", 1)
         production = UIButton("Production", (740, 640), (70,70), "main")
+        production.set_graphic(self.ui_icons["Furnace"])
         production.menu_addbutton("Sawmill", 0)
-        production.menu_addbutton("Steel Factory", 1)
+        production.menu_addbutton("Furnace", 1)
         production.menu_addbutton("Windmill", 1)
         production.menu_addbutton("Bakery", 1)
         production.menu_addbutton("Knitter", 0)
-        self.ui_buttons = [road, houses, gathering, production]
+        balance = UIButton("Balance", (455, 10), (80,30), "info")
+        balance.set_info(f"{self.player_balance} $")
+        income = UIButton("Income", (550, 10), (80,30), "info")
+        income.set_info(f"{int(self.player_income)} $ / s")
+        timber = UIButton("Timber", (740,10), (80,30), "info")
+        current_timber = self.player_goods["Timber"]
+        current_steel = self.player_goods["Steel"]
+        timber.set_info(f"{current_timber}")
+        timber.tooltip_addline(f"Timber: {current_timber}")
+        timber.tooltip_addline(f"Steel: {current_steel}")
+        population = UIButton("Population", (645,10), (80,30), "info")
+        peasants = self.player_population["Peasant"]
+        workers = self.player_population["Worker"]
+        total_population = peasants + workers
+        population.set_info(f"Population: {total_population}")
+        population.tooltip_addline(f"Peasants: {peasants}")
+        population.tooltip_addline(f"Workers: {workers}")
+        self.ui_buttons = [road, houses, gathering, production, balance, income, timber, population]
 
     def draw_button(self, button):
 
@@ -670,14 +740,17 @@ class StrategyGame():
         button_fill = pygame.draw.rect(self.screen, self.lgray, (x, y, sx, sy))
         if button.graphic != None:
             icon = button.graphic
-            self.screen.blit(icon, (x+15, y+15))
+            if button.size == (70,70):
+                self.screen.blit(icon, (x+15, y+15))
+            elif button.size == (50,50):
+                self.screen.blit(icon, (x+5, y+5))
 
         #draw the button frame
         line1 = pygame.draw.line(self.screen, self.white, (x,y), (x+sx, y), width=3)
         line2 = pygame.draw.line(self.screen, self.white,(x, y+sy), (x,y), width=3) 
         line3 = pygame.draw.line(self.screen, self.black,(x, y+sy), (x+sx, y+sy), width=3)
         line4 = pygame.draw.line(self.screen, self.black, (x+sx, y), (x+sx, y+sy), width=3)
-        text = self.font_arial.render(button.keybind_text, True, self.black)
+        text = self.font_arial_small.render(button.info, True, self.black)
         frame_text = self.screen.blit(text,(x+5, y+5))
         icon = button.graphic
 
@@ -690,19 +763,23 @@ class StrategyGame():
         line1 = pygame.draw.line(self.screen, self.white, (x, y+sy), (x+sx, y+sy), width=3)
         line2 = pygame.draw.line(self.screen, self.white, (x+sx, y), (x+sx, y+sy), width=3)
 
-    def draw_tooltip(self, text: str):
+    def draw_tooltip(self, info: list):
 
         sizex = 150
         sizey = 60
         x = 1100
         y = 650
         frame_width = 3
-
-        title = self.font_arial.render(text, True, self.black)
-
         tooltip_frame = pygame.draw.rect(self.screen, self.black, (x-frame_width, y-sizey-frame_width, sizex+frame_width*2, sizey+frame_width*2))
         tooltip_box = pygame.draw.rect(self.screen, self.lgray, (x, y-sizey, sizex, sizey))
-        tooltip_text = self.screen.blit(title, (x+20, y-40))
+        tooltip_split = pygame.draw.line(self.screen, self.black, (x,y-40), (x+sizex, y-40), width=frame_width)
+
+        for line in info:
+
+            title = self.font_arial_small.render(line, True, self.black)
+            tooltip_text = self.screen.blit(title, (x+10, y-60))
+
+            y += 20
 
     def open_menu(self, menu: list):
 
@@ -751,6 +828,16 @@ class StrategyGame():
                 for building in self.buildings:
                     if building.name == item[0]:
                         new_button.set_building(building)
+                        if building.type == "gather":
+                            new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
+                        elif building.type == "produce":
+                            new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
+                            needs = ""
+                            for need in building.goodneeds:
+                                needs += f"{need[0]}"
+                                if building.goodneeds.index(need) < len(building.goodneeds)-1:
+                                    needs += f" and "
+                            new_button.tooltip_addline(f"from {needs}")
                 self.ui_menu_buttons.append(new_button)
                 
                 y += 80
@@ -769,27 +856,27 @@ class StrategyGame():
         #opens a new window in game
         pass
 
-    def tool_highlight_tile(self, tile: Tile, colour: tuple):
+    def tool_highlight_tile(self, tile: Tile, colour: tuple, size: int):
         #if a tool is selected, the highlighting of tiles will be different
         linewidth = 3
         s = self.tilesize
         x = tile.location[1]-self.camera_position[0]
         y = tile.location[0]-self.camera_position[1]
 
-        line1 = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s, y*s), width=linewidth)
-        line2 = pygame.draw.line(self.screen, colour, (x*s, y*s),(x*s, y*s+s), width=linewidth)
-        line3 = pygame.draw.line(self.screen, colour, (x*s, y*s+s),(x*s+s, y*s+s),width=linewidth)
-        line4 = pygame.draw.line(self.screen, colour, (x*s+s, y*s),(x*s+s, y*s+s),width=linewidth)
+        line1 = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s*size, y*s), width=linewidth)
+        line2 = pygame.draw.line(self.screen, colour, (x*s, y*s),(x*s, y*s+s*size), width=linewidth)
+        line3 = pygame.draw.line(self.screen, colour, (x*s, y*s+s*size),(x*s+s*size, y*s+s*size),width=linewidth)
+        line4 = pygame.draw.line(self.screen, colour, (x*s+s*size, y*s),(x*s+s*size, y*s+s*size),width=linewidth)
 
         #this is used to calculate points for the lines that fill the tile
         variable = 2
 
         #their starting point is upleft and their end point is downright
         #splitline splits the tile from (x,y) to (x+tilesize, y+tilesize)
-        splitline = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s, y*s+s), width=1)
-        for line in range(int(s/2)):
-            pygame.draw.line(self.screen, colour, (x*s+variable, y*s), (x*s+s, y*s+s-variable), width=1)
-            pygame.draw.line(self.screen, colour, (x*s, y*s+s-variable), (x*s+variable, y*s+s), width=1)
+        splitline = pygame.draw.line(self.screen, colour, (x*s, y*s), (x*s+s*size, y*s+s*size), width=1)
+        for line in range(int(s/2*size)):
+            pygame.draw.line(self.screen, colour, (x*s+variable, y*s), (x*s+s*size, y*s+s*size-variable), width=1)
+            pygame.draw.line(self.screen, colour, (x*s, y*s+s*size-variable), (x*s+variable, y*s+s*size), width=1)
             variable += 2
 
 
@@ -803,10 +890,12 @@ class StrategyGame():
         demolish = GameTool("Demolish", 0)
         demolish.create_button((910, 660), (50,50), "tool")
         demolish.button.set_tool(demolish)
+        demolish.button.set_graphic(self.ui_icons["Demolish"])
         demolish.set_colour((255,128,0))
         upgrade = GameTool("Upgrade", 0)
         upgrade.create_button((970, 660),(50,50), "tool")
         upgrade.button.set_tool(upgrade)
+        upgrade.button.set_graphic(self.ui_icons["Upgrade"])
         upgrade.set_colour((0,255,0))
 
         self.player_tools = [demolish, upgrade, build, build_road]
@@ -824,6 +913,7 @@ class StrategyGame():
     def draw_ui(self):
 
         self.bottombar()
+        self.topbar()
         for button in self.ui_buttons:
             self.draw_button(button)
         if self.menu_open:
@@ -846,7 +936,7 @@ class UIButton():
         self.location = location
         self.size = size
         self.menu = []
-        self.tooltip = []
+        self.tooltip = [self.name]
         self.type = type
         self.active = False
         self.passive = False
@@ -855,6 +945,7 @@ class UIButton():
         self.graphic = None
         self.tool = None
         self.building = None
+        self.info = None
 
     def click(self):
 
@@ -897,6 +988,10 @@ class UIButton():
     def set_keybind(self, key: pygame.key, text: str):
         self.keybind = key
         self.keybind_text = text
+
+    def set_info(self, info: str):
+        #possible text for button added here
+        self.info = info
 
     def set_active(self, value: bool):
 
