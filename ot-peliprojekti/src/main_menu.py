@@ -87,7 +87,7 @@ class MainMenu():
 
         #different buttons
         newgame = Button("New Game", (540, 200), (self.button_width, self.button_height))
-        loadgame = Button("Load Game", (540, 300), (self.button_width, self.button_height))
+        loadgame = Button("Load Game NYI", (540, 300), (self.button_width, self.button_height))
         exitgame = Button("Exit Game", (540, 400), (self.button_width, self.button_height))
 
         if menu == "Main Menu":
@@ -178,6 +178,8 @@ class Button():
         #this determines what happens when a selected button is pressed
         if self.name == "New Game":
             MainMenu.run_game(0)
+        if self.name == "Exit Game":
+            exit()
 
     def get_button(self, coords: tuple):
 

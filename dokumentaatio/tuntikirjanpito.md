@@ -12,3 +12,7 @@
 | 12.4. | 9    | Päävalikon alustus ja käyttöliittymän koodaamista |
 | 15.4. | 2    | Työkalujen alustus |
 | 19.4. | 10   | Grafiikan testausta ja työkalujen säätöä |
+| 20.4. | 8    | Koodin kirjoittamista ja testaamista |
+| 21.4. | 4    | Koodin kirjoittamista ja testaamista |
+| 25.4. | 12   | Koodin kirjoittamista ja grafiikan piirtämistä |
+|  yht  | 65   |       |

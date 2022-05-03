@@ -61,13 +61,15 @@ class StrategyGame():
         #some default values for new game setup
         self.population_tier = 0
         self.seconds = 0
-        self.player_buildings = []
-        self.player_balance = 0
+        self.player_buildings = {"Small House": 0, "Medium House": 0, "Large House": 0, "Woodcutter": 0, "Sawmill": 0, "Sheep Farm": 0, "Knitter": 0, "Grain Farm": 0, "Windmill": 0, "Bakery": 0, "Coal Mine": 0, "Iron Mine": 0, "Furnace": 0}
+        self.player_balance = 10000
         self.player_income = 0
         self.player_population = {"Peasant": 0, "Worker": 0}
-        #this is probably not needed
         self.player_production = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
-        self.player_goods = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
+        self.player_demand = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
+        self.player_goods = {"Wood": 0, "Timber": 20, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
+        self.timer = 0
+        self.speed = 1
 
 
         self.font_arial = pygame.font.SysFont("Arial", 22)
@@ -186,53 +188,86 @@ class StrategyGame():
 
         housesmall = Building("Small House", "house", 0, None)
         housesmall.set_graphic(pygame.image.load("src/images/housesmall.png"))
+        housesmall.set_materialneeds("Timber", 2)
         housemedium = Building("Medium House", "house", 1, None)
         housemedium.set_graphic(pygame.image.load("src/images/housemedium.png"))
+        housemedium.set_materialneeds("Timber", 4)
         houselarge = Building("Large House", "house", 2, None)
+        houselarge.set_materialneeds("Timber", 6)
+        houselarge.set_materialneeds("Steel", 2)
 
         woodcutter = Building("Woodcutter", "gather", 1, 0)
-        woodcutter.set_production("Logs", 5)
+        woodcutter.set_production("Wood", 5)
+        woodcutter.set_building_cost(50)
         woodcutter.set_graphic(pygame.image.load("src/images/woodcutter.png"))
+        woodcutter.set_upkeep(5)
 
         mineiron = Building("Iron Mine", "gather", 2, 500)
         mineiron.set_production("Iron", 15)
+        mineiron.set_building_cost(500)
+        mineiron.set_materialneeds("Timber", 10)
         mineiron.set_surface(2)
         mineiron.set_graphic(pygame.image.load("src/images/ironmine.png"))
+        mineiron.set_upkeep(50)
         minecoal = Building("Coal Mine", "gather", 2, 500)
         minecoal.set_production("Coal", 15)
+        minecoal.set_building_cost(500)
+        minecoal.set_materialneeds("Timber", 10)
         minecoal.set_surface(2)
         minecoal.set_graphic(pygame.image.load("src/images/coalmine.png"))
+        minecoal.set_upkeep(50)
 
         farmgrain = Building("Grain Farm", "gather", 1, 200)
         farmgrain.set_production("Grain", 30)
+        farmgrain.set_building_cost(500)
+        farmgrain.set_materialneeds("Timber", 8)
         farmgrain.set_graphic(pygame.image.load("src/images/grainfarm.png"))
+        farmgrain.set_upkeep(50)
         farmsheep = Building("Sheep Farm", "gather", 1, 100)
         farmsheep.set_production("Wool", 30)
+        farmsheep.set_building_cost(150)
+        farmsheep.set_materialneeds("Timber", 4)
         farmsheep.set_graphic(pygame.image.load("src/images/sheepfarm.png"))
+        farmsheep.set_upkeep(10)
 
         sawmill = Building("Sawmill", "produce", 1, 0)
-        sawmill.add_requirement("Logs", 1)
+        sawmill.add_requirement("Wood")
         sawmill.set_production("Timber", 5)
+        sawmill.set_building_cost(100)
         sawmill.set_graphic(pygame.image.load("src/images/sawmill.png"))
+        sawmill.set_upkeep(10)
 
         knitter = Building("Knitter", "produce", 1, 100)
-        knitter.add_requirement("Wool", 1)
-        knitter.set_production("Clothing", 15)
+        knitter.add_requirement("Wool")
+        knitter.set_production("Clothes", 15)
+        knitter.set_building_cost(250)
+        knitter.set_materialneeds("Timber", 8)
         knitter.set_graphic(pygame.image.load("src/images/knitter.png"))
+        knitter.set_upkeep(15)
         millflour = Building("Windmill", "produce", 1, 200)
-        millflour.add_requirement("Grain", 1)
+        millflour.add_requirement("Grain")
         millflour.set_production("Flour", 15)
+        millflour.set_materialneeds("Timber", 8)
+        millflour.set_building_cost(400)
         millflour.set_graphic(pygame.image.load("src/images/windmill.png"))
+        millflour.set_upkeep(50)
         bakery = Building("Bakery", "produce", 1, 200)
-        bakery.add_requirement("Flour", 1)
+        bakery.add_requirement("Flour")
         bakery.set_production("Bread", 15)
+        bakery.set_building_cost(1000)
+        bakery.set_materialneeds("Timber", 12)
+        bakery.set_materialneeds("Steel", 4)
         bakery.set_graphic(pygame.image.load("src/images/bakery.png"))
+        bakery.set_upkeep(100)
 
         furnace = Building("Furnace", "produce", 2, 500)
-        furnace.add_requirement("Coal", 2)
-        furnace.add_requirement("Iron", 2)
+        furnace.add_requirement("Coal")
+        furnace.add_requirement("Iron")
         furnace.set_production("Steel", 30)
+        furnace.set_building_cost(1000)
+        furnace.set_materialneeds("Timber", 20)
         furnace.set_graphic(pygame.image.load("src/images/furnace.png"))
+        furnace.set_upkeep(150)
 
         self.buildings = [\
             housesmall, housemedium, houselarge, \
@@ -307,12 +342,17 @@ class StrategyGame():
         if self.mouseoverbutton: 
             self.highlight_button(self.current_button)   
         if self.tooltip_active:
-            self.draw_tooltip(self.current_button.tooltip)
+            self.draw_tooltip(self.current_button.tooltip)        
 
 
         pygame.display.flip()
         self.game_clock.tick(60)
-        self.seconds += 1/60
+        self.update_stats()
+        if self.timer < 60:
+            self.timer += 1 * self.speed
+        else:
+            self.timer = 0
+            self.seconds += 1
 
 
 
@@ -347,8 +387,7 @@ class StrategyGame():
                 if event.key == self.keybind_right:
                     self.camera_right = True
                 if event.key == K_t:
-                    print(f"current tool: {self.current_tool}")
-                    print(f"building: {self.current_tool_building}")
+                    print(f"current time: {self.seconds}")
                 if event.key == K_y:
                     print(f"Tile Info: \n \
                     Terrain = {self.current_tile.terrain} \n \
@@ -356,8 +395,34 @@ class StrategyGame():
                             Location = {self.current_tile.location} \n \
                                 Road = {self.current_tile.has_road()}")
                 #placeholder
+                #placeholder
                 if event.key == K_r:
-                    self.build_road(self.current_tile)
+                    print(self.current_tile.timer)
+                    print(self.current_tile.building.production)
+                if event.key == K_p:
+                    print(f"Production: {self.player_production}")
+                    print(f"Demand: {self.player_demand}")
+                    print(f"Buildings: {self.player_buildings}")
+                    print(f"Goods: {self.player_goods}")       
+                if event.key == K_q:
+                    if self.speed > 1:
+                        self.speed -= 1
+                if event.key == K_e:
+                    if self.speed < 10:
+                        self.speed += 1    
+                if event.key == K_1:
+                    print(self.speed)
+                if event.key == K_2:
+                    self.player_goods["Timber"] += 20
+                if event.key == K_3:
+                    self.player_goods["Steel"] += 20
+                if event.key == K_4:
+                    self.player_balance += 10000       
+                if event.key == K_l:
+                    for good in self.player_production:
+                        print(good)
+                if event.key == K_n:
+                    print(self.current_tile.building.name)
 
             if event.type == pygame.KEYUP:
                 if event.key == self.keybind_up:
@@ -390,14 +455,19 @@ class StrategyGame():
                                 if self.current_tile.building == None:
                                     self.build(self.current_tool_building)
                             if self.current_tool.name == "Demolish":
+                                #reset tile to default and update player stats accordingly
+                                if self.current_tile.has_road() == False:
+                                    self.player_buildings[self.current_tile.building.name] -= 1
+                                    if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
+                                        self.player_production[self.current_tile.building.production[0]] -= int(60/self.current_tile.building.production[1])
                                 self.current_tile.empty()
-                                self.update_roads()
+                                self.update_roads(self.current_tile.location)
                             if self.current_tool.name == "Upgrade":
                                 if self.current_tile.housetier == 0:
                                     self.current_tile.upgrade(self.buildings[1])
                             if self.current_tool.name == "Build Road":
                                 self.build_road(self.current_tile)
-                                self.update_roads()
+                                self.update_roads(self.current_tile.location)
                         else:
                             pass
 
@@ -496,9 +566,34 @@ class StrategyGame():
             self.move_camera("right")
 
 
-
-
-
+        #increase timer for tiles with a building
+        #this is used to determine if the tile is producing something
+        #check if a second has passed
+        if self.timer >= 60:
+            for row in self.map:
+                for tile in row:
+                    #check if tile has building
+                    if tile.building != None and tile.has_road() == False:
+                        #check if building is production or gather building
+                        if tile.building.type == "produce" or tile.building.type == "gather":
+                            #check if production interval is reached
+                            if tile.timer == tile.building.production[1]:
+                                #produce goods for tile
+                                #the produce goods method will determine whether tile building is eligible to produce
+                                self.produce_goods(tile)
+                                #reset the timer for the tile
+                                tile.set_timer(0)
+                            else:
+                                #otherwise increase tile timer
+                                tile.timer += 1
+                        elif tile.building.type == "house":
+                            #citizens need goods every 4 minutes
+                            if tile.timer >= 240:
+                                #consume goods
+                                self.consume_goods(tile)
+                            else:
+                                tile.timer += 1
+                        
     def create_map(self, map: list):
         
         #map information is extracted from an array and converted into Tile class objects
@@ -521,10 +616,34 @@ class StrategyGame():
             self.map.append(newrow)
 
     def build(self, building: Building):
-        #build selected building to selected tile
         tile = self.current_tile
-        if tile.terrain == 1 and tile.building == None and tile.has_road() == False:
-            tile.add_building(building)
+        #build selected building to selected tile
+        #players current number of buildings and produced goods are updated accordingly
+        if self.current_tool_building.type != "house":
+            production_per_minute = int(60/building.production[1])
+        #check if tile is eligible for building
+        if tile.terrain == building.surface and tile.building == None and tile.has_road() == False:
+            #check if player has materials and enough cash to build
+            if int(self.player_balance) >= building.building_cost and self.player_goods["Timber"] >= building.materialneeds["Timber"] and self.player_goods["Steel"] >= building.materialneeds["Steel"]: 
+                #build the selected building and substract the materials and cash from player
+                tile.add_building(building)
+                self.player_goods["Timber"] -= building.materialneeds["Timber"]
+                self.player_goods["Steel"] -= building.materialneeds["Steel"]
+                self.player_balance -= building.building_cost
+                #set timer for building
+                #this is used to determine production intervals
+                if building.type != "house":
+                    tile.set_timer(0)
+                elif building.type == "house":
+                    tile.set_timer(240)
+                self.player_buildings[building.name] += 1
+            else:
+                pass
+            #this is for updating player production stats
+            if building.type != "house":
+                for good in self.player_production:
+                    if good == building.production[0]:
+                        self.player_production[building.production[0]] += production_per_minute
         else:
             pass
 
@@ -595,35 +714,38 @@ class StrategyGame():
         road = self.select_road(tile)
         tile.place_road(road)
 
-    def update_roads(self):
+    def update_roads(self, location: tuple):
         #updates all the tiles with roads to match possible new roads
         for row in self.map:
             for tile in row:
                 if tile.has_road():
                     self.build_road(tile)
 
-
     def check_for_road(self, location: tuple):
         #checks tile for road based on tile location
-        for row in self.map:
-            for tile in row:
-                if tile.location == location:
-                    return tile.has_road()
+        tile = self.map[location[1]][location[0]]
+        return tile.has_road()
 
-    def get_production(self):
+    def produce_goods(self, tile: Tile):
         
-        #get production from buildings that produce goods
-        pass
-
-    def get_taxes(self):
-
-        #get taxes from houses
-        pass
-
-    def update_player(self):
-
-        #update the player statistics
-        pass
+        #check if player has goods for production (ie. wood to produce timber)
+        #first set default value for goods as False
+        has_goods = False
+        #check building type
+        if tile.building.type == "produce":
+            for good in tile.building.goodneeds:
+                if self.player_goods[good] > 0:
+                    has_goods = True
+                else:
+                    has_goods = False
+            if has_goods:
+                #if player has goods, produce new goods
+                self.player_goods[tile.building.production[0]] += 1
+                for good in tile.building.goodneeds:
+                    self.player_goods[good] -= 1
+        elif tile.building.type == "gather":
+            #for gather buildings, good requirements don't exist
+            self.player_goods[tile.building.production[0]] += 1
 
     def move_camera(self, direction: str):
 
@@ -691,6 +813,115 @@ class StrategyGame():
 
         return topbar
 
+    def update_stats(self):
+
+        income = self.check_income()
+        self.player_balance += (income/60) * self.speed
+        self.update_demand()
+        peasants = self.check_population("Peasant")
+        workers = self.check_population("Worker")
+
+        for button in self.ui_buttons:
+            if button.name == "Balance":
+                button.set_info(f"{int(self.player_balance)} $")
+            if button.name == "Income":
+                button.set_info(f"{int(income)} $ / s")
+            if button.name == "Building materials":
+                timber, steel = self.player_goods["Timber"], self.player_goods["Steel"]
+                button.set_info(f"{timber} / {steel}")
+                button.update_tooltip("Timber", timber)
+                button.update_tooltip("Steel", steel)
+            if button.name == "Population":
+                total_population = peasants + workers
+                button.set_info(f"Pop: {total_population}")
+                button.update_tooltip("Peasants", peasants)
+                button.update_tooltip("Workers", workers)
+
+    def check_income(self):
+        #this is used to determine player income
+        income = 0
+        for row in self.map:
+            for tile in row:
+                if tile.has_building():
+                    income += tile.income
+
+        return income
+
+    def update_demand(self):
+        #this is used to update player demand of goods
+        #citizens needs are pulled from list
+        citizen_needs = ["Clothes", "Bread"]
+        #check all buildings
+        for item in self.player_buildings:
+            #check if player currently has any of these buildings
+            if self.player_buildings[item] > 0:
+                #calculate demand of building
+                building = self.find_building(item)
+                #check demand of goods by production buildings
+                if building.type == "produce":
+                    for need in building.goodneeds:
+                        #determine demand per minute
+                        demand = 60/building.production[1]
+                        self.player_demand[need] = int(self.player_buildings[item] * demand)
+                elif building.type == "house":
+                    for need in citizen_needs:
+                        #citizens need 1 good per house every 4 minutes
+                        self.player_demand[need] = int(0.25*self.player_buildings[item])
+
+                
+
+
+    def find_building(self, name: str):
+        #this is used to find a given building based on name
+        #it will return Building class item
+        for building in self.buildings:
+            if building.name == name:
+                return building
+
+    def consume_goods(self, tile: Tile):
+        #this is where citizen goods consumption is calculated
+        #every tile with house will consume goods as long as player has enough stock
+        clothes = self.player_goods["Clothes"]
+        bread = self.player_goods["Bread"]
+        if tile.building.name == "Small House":
+            if clothes > 0:
+                clothes -= 1
+                tile.set_income(10)
+                tile.set_population(8)
+        elif tile.building.name == "Medium House":
+            if clothes > 0:
+                clothes -= 1
+                tile.set_income(18)
+                tile.set_population(16)
+                if bread > 0:
+                    bread -= 1
+                    tile.set_income(36)
+                    tile.set_population(30)
+            elif bread > 0:
+                bread -= 1
+                tile.set_income(20)
+                tile.set_population(18)
+        tile.set_timer(0)
+
+
+    def check_population(self, population_type: str):
+
+        #this is used to determine player population
+        population = 0
+        for row in self.map:
+            for tile in row:
+                if tile.has_building():
+                    if population_type == "Peasant":
+                        if tile.building.name == "Small House":
+                            population += tile.population
+                    elif population_type == "Worker":
+                        if tile.building.name == "Medium House":
+                            population += tile.population
+
+
+        return population
+                    
+
     def buttons(self):
 
         #define the default buttons on the UI
@@ -718,10 +949,10 @@ class StrategyGame():
         balance.set_info(f"{self.player_balance} $")
         income = UIButton("Income", (550, 10), (80,30), "info")
         income.set_info(f"{int(self.player_income)} $ / s")
-        timber = UIButton("Timber", (740,10), (80,30), "info")
+        timber = UIButton("Building materials", (740,10), (80,30), "info")
         current_timber = self.player_goods["Timber"]
         current_steel = self.player_goods["Steel"]
-        timber.set_info(f"{current_timber}")
+        timber.set_info(f"{current_timber} / {current_steel}")
         timber.tooltip_addline(f"Timber: {current_timber}")
         timber.tooltip_addline(f"Steel: {current_steel}")
         population = UIButton("Population", (645,10), (80,30), "info")
@@ -767,11 +998,16 @@ class StrategyGame():
 
         sizex = 150
         sizey = 60
+        if len(info) > 1:
+            extraline = 20*len(info) - 20*3
+        else:
+            extraline = 0
+        print(len(info))
         x = 1100
         y = 650
         frame_width = 3
-        tooltip_frame = pygame.draw.rect(self.screen, self.black, (x-frame_width, y-sizey-frame_width, sizex+frame_width*2, sizey+frame_width*2))
-        tooltip_box = pygame.draw.rect(self.screen, self.lgray, (x, y-sizey, sizex, sizey))
+        tooltip_frame = pygame.draw.rect(self.screen, self.black, (x-frame_width, y-sizey-frame_width, sizex+frame_width*2, sizey+extraline+frame_width*2))
+        tooltip_box = pygame.draw.rect(self.screen, self.lgray, (x, y-sizey, sizex, sizey+extraline))
         tooltip_split = pygame.draw.line(self.screen, self.black, (x,y-40), (x+sizex, y-40), width=frame_width)
 
         for line in info:
@@ -830,14 +1066,30 @@ class StrategyGame():
                         new_button.set_building(building)
                         if building.type == "gather":
                             new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
+                            new_button.tooltip_addline(f"Every {new_button.building.production[1]} seconds")
+                            new_button.tooltip_addline(f"")
+                            timber = building.materialneeds["Timber"]
+                            steel = building.materialneeds["Steel"]
+                            if steel > 0:
+                                new_button.tooltip_addline(f"{timber} timber, {steel} steel, {building.building_cost} $")
+                            else:
+                                new_button.tooltip_addline(f"{timber} timber, {building.building_cost} $")
                         elif building.type == "produce":
                             new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
+                            new_button.tooltip_addline(f"Every {new_button.building.production[1]} seconds")
                             needs = ""
                             for need in building.goodneeds:
-                                needs += f"{need[0]}"
+                                needs += f"{need}"
                                 if building.goodneeds.index(need) < len(building.goodneeds)-1:
                                     needs += f" and "
                             new_button.tooltip_addline(f"from {needs}")
+                            new_button.tooltip_addline(f"")
+                            timber = building.materialneeds["Timber"]
+                            steel = building.materialneeds["Steel"]
+                            if steel > 0:
+                                new_button.tooltip_addline(f"{timber} timber, {steel} steel, {building.building_cost} $")
+                            else:
+                                new_button.tooltip_addline(f"{timber} timber, {building.building_cost} $")
                 self.ui_menu_buttons.append(new_button)
                 
                 y += 80
@@ -984,6 +1236,18 @@ class UIButton():
         
         #add a line of text in the tooltip
         self.tooltip.append(text)
+
+    def update_tooltip(self, name: str, amount: int):
+        #update the numbers on the button tooltip
+        for line in self.tooltip:
+            if name in line:
+                old_amount = ""
+                for item in line:
+                    if item.isdigit():
+                        old_amount += item
+
+                self.tooltip[self.tooltip.index(line)] = line.replace(old_amount, str(amount))
+                
 
     def set_keybind(self, key: pygame.key, text: str):
         self.keybind = key

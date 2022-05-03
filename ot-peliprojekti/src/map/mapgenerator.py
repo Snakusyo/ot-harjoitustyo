@@ -1,4 +1,5 @@
 from random import randint
+from sys import maxsize
 
 #TESTING MAP GENERATION
 
@@ -37,14 +38,15 @@ class MapGenerator():
         #lenght of map and row
         s = len(map)
 
-        #minimum size of island in tiles
-        #third of the map
-        mins = int((s*s)/3)
         #maximum size of island in tiles
         #s^2-(2sb-2*(b*(s-2b)))
         #this ensures that the island fits the map while having the borders
         #probably not needed
         maxs = int((s*s)-(2*s*b)-2*(b*(s-2*b)))
+        #minimum size of island in tiles
+        #this ensures that the island is always at least a certain portion (50% of playable area) of the map and
+        #not too small
+        mins = int(maxs/2)
         #maximum length of one island row (height/width)
         maxd = s-(2*b)
         #minimum length of one island row (height/width)
@@ -159,8 +161,22 @@ class MapGenerator():
 
 
     def get_map(self):
+
+        max_size = int((self.size*self.size)-(2*self.size*self.border)-2*(self.border*(self.size-2*self.border)))
+        min_size = int(max_size/2)
+        #generate an empty ocean
         ocean = self.generate_map(self.size)
-        map_with_island = self.add_island(ocean)
+        #generate the island that is within the determined min/max size
+        while True:
+            island_size = 0
+            map_with_island = self.add_island(ocean)
+            for row in map_with_island:
+                island_size += row.count(1)
+
+            if min_size <= island_size <= max_size:
+                break
+
+
 
         #add a couple mountains and lakes to the map
         self.add_mountain_or_lake(map_with_island, "mountain")
@@ -168,7 +184,7 @@ class MapGenerator():
         self.add_mountain_or_lake(map_with_island, "lake")
         self.add_mountain_or_lake(map_with_island, "lake")
 
-        #turn the map 90 degrees because my code sucks
+        #turn the map 90 degrees because "oops"
         newmap = []
         for x in range(self.size):
             newrow = []
