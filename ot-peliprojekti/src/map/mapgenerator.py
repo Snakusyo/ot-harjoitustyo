@@ -6,8 +6,15 @@ from sys import maxsize
 class MapGenerator():
 
     def __init__(self, size: int):
+
+        #default values for map are set here
+        #the border determines how many tiles at the edge of the map must be ocean tiles before adding land
         self.border = 3
+        #variance determines how much difference in size there is within lengths of rows of tiles
         self.variance = 4
+        #size determines width and height of map
+        #in the generate_map function, it is determined that the minimum size of map is 64
+        #this may be changed but making it smaller may brake the map generation!
         self.size = size
 
     def generate_map(self, size: int):
@@ -81,6 +88,7 @@ class MapGenerator():
         return map
 
     def generate_island_row(self, border: int, width: int, start: int, row: list):
+        #set single letters to make the equations easier to read
         b = border
         w = width
         s = start
@@ -162,25 +170,39 @@ class MapGenerator():
 
     def get_map(self):
 
+        #determine maximum and minimum size for island
+        #this is used to ensure the island isn't too small or too big
         max_size = int((self.size*self.size)-(2*self.size*self.border)-2*(self.border*(self.size-2*self.border)))
         min_size = int(max_size/2)
-        #generate an empty ocean
-        ocean = self.generate_map(self.size)
-        #generate the island that is within the determined min/max size
         while True:
+            #generate an empty ocean
+            ocean = self.generate_map(self.size)
             island_size = 0
+            #generate an island on the ocean
             map_with_island = self.add_island(ocean)
             for row in map_with_island:
                 island_size += row.count(1)
 
+            #assure island meets size requirements
             if min_size <= island_size <= max_size:
                 break
 
 
 
-        #add a couple mountains and lakes to the map
-        self.add_mountain_or_lake(map_with_island, "mountain")
-        self.add_mountain_or_lake(map_with_island, "mountain")
+        #add a mountain to map
+        mountain = False
+        while mountain == False:
+            mountain_tiles = 0
+            for row in map_with_island:
+                for tile in row:
+                    if tile == 2:
+                        mountain_tiles += 1
+
+            if mountain_tiles > 0:
+                break
+            else:
+                self.add_mountain_or_lake(map_with_island, "mountain")
+                
         self.add_mountain_or_lake(map_with_island, "lake")
         self.add_mountain_or_lake(map_with_island, "lake")
 

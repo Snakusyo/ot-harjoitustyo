@@ -1,6 +1,6 @@
 from argparse import ONE_OR_MORE
 from tracemalloc import start
-from turtle import up
+from turtle import onclick, up
 from pkg_resources import yield_lines
 import pygame
 from pygame.locals import *
@@ -740,12 +740,14 @@ class StrategyGame():
                     has_goods = False
             if has_goods:
                 #if player has goods, produce new goods
-                self.player_goods[tile.building.production[0]] += 1
+                if self.player_goods[tile.building.production[0]] < 100:
+                    self.player_goods[tile.building.production[0]] += 1
                 for good in tile.building.goodneeds:
                     self.player_goods[good] -= 1
         elif tile.building.type == "gather":
             #for gather buildings, good requirements don't exist
-            self.player_goods[tile.building.production[0]] += 1
+            if self.player_goods[tile.building.production[0]] < 100:
+                self.player_goods[tile.building.production[0]] += 1
 
     def move_camera(self, direction: str):
 
@@ -815,17 +817,21 @@ class StrategyGame():
 
     def update_stats(self):
 
-        income = self.check_income()
+        income = self.check_income("total")
         self.player_balance += (income/60) * self.speed
         self.update_demand()
         peasants = self.check_population("Peasant")
         workers = self.check_population("Worker")
+        profit = self.check_income("profit")
+        upkeep = self.check_income("deficit")
 
         for button in self.ui_buttons:
             if button.name == "Balance":
                 button.set_info(f"{int(self.player_balance)} $")
             if button.name == "Income":
                 button.set_info(f"{int(income)} $ / s")
+                button.update_tooltip("Taxes", profit)
+                button.update_tooltip("Upkeep", upkeep)
             if button.name == "Building materials":
                 timber, steel = self.player_goods["Timber"], self.player_goods["Steel"]
                 button.set_info(f"{timber} / {steel}")
@@ -837,15 +843,25 @@ class StrategyGame():
                 button.update_tooltip("Peasants", peasants)
                 button.update_tooltip("Workers", workers)
 
-    def check_income(self):
+    def check_income(self, type: str):
         #this is used to determine player income
-        income = 0
+        #type can be total, profit or deficit
+        profit = 0
+        deficit = 0
         for row in self.map:
             for tile in row:
                 if tile.has_building():
-                    income += tile.income
-
-        return income
+                    if tile.income > 0:
+                        profit += tile.income
+                    elif tile.income < 0:
+                        deficit -= tile.income
+                    
+        if type == "total":
+            return profit-deficit
+        elif type == "profit":
+            return profit
+        elif type == "deficit":
+            return deficit
 
     def update_demand(self):
         #this is used to update player demand of goods
@@ -885,23 +901,37 @@ class StrategyGame():
         bread = self.player_goods["Bread"]
         if tile.building.name == "Small House":
             if clothes > 0:
-                clothes -= 1
+                self.player_goods["Clothes"] -= 1
+                tile.set_timer(0)
                 tile.set_income(10)
                 tile.set_population(8)
+            else:
+                tile.set_income(2)
+                tile.set_population(2)
         elif tile.building.name == "Medium House":
             if clothes > 0:
-                clothes -= 1
+                self.player_goods["Clothes"] -= 1
+                tile.set_timer(0)
+                print("clothes sold to workers")
                 tile.set_income(18)
                 tile.set_population(16)
                 if bread > 0:
-                    bread -= 1
+                    self.player_goods["Bread"] -= 1
+                    tile.set_timer(0)
                     tile.set_income(36)
                     tile.set_population(30)
+                else:
+                    tile.set_income(18)
+                    tile.set_population(16)
             elif bread > 0:
                 bread -= 1
                 tile.set_income(20)
                 tile.set_population(18)
-        tile.set_timer(0)
+            
+            else:
+                tile.set_income(4)
+                tile.set_population(4)
+        
 
 
     def check_population(self, population_type: str):
@@ -949,6 +979,10 @@ class StrategyGame():
         balance.set_info(f"{self.player_balance} $")
         income = UIButton("Income", (550, 10), (80,30), "info")
         income.set_info(f"{int(self.player_income)} $ / s")
+        profit = self.check_income("profit")
+        upkeep = self.check_income("deficit")
+        income.tooltip_addline(f"Taxes: +{profit}")
+        income.tooltip_addline(f"Upkeep: -{upkeep}")
         timber = UIButton("Building materials", (740,10), (80,30), "info")
         current_timber = self.player_goods["Timber"]
         current_steel = self.player_goods["Steel"]
@@ -1002,7 +1036,6 @@ class StrategyGame():
             extraline = 20*len(info) - 20*3
         else:
             extraline = 0
-        print(len(info))
         x = 1100
         y = 650
         frame_width = 3
