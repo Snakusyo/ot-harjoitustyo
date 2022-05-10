@@ -1,7 +1,3 @@
-from argparse import ONE_OR_MORE
-from tracemalloc import start
-from turtle import onclick, up
-from pkg_resources import yield_lines
 import pygame
 from pygame.locals import *
 from map.tiles import Tile
@@ -41,12 +37,13 @@ class StrategyGame():
         self.menu_open = False
         self.current_menu = None
         self.tooltip_active = False
-        self.window_open = False
         self.ui_menu_buttons = []
         self.current_tool = None
         self.current_tile = None
         self.current_tool_building = None
         self.ui_icons = []
+        self.current_window = None
+        self.mbdown = False
 
         #setup default colours
         self.black = (0,0,0)
@@ -65,19 +62,21 @@ class StrategyGame():
         self.player_balance = 10000
         self.player_income = 0
         self.player_population = {"Peasant": 0, "Worker": 0}
-        self.player_production = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
-        self.player_demand = {"Wood": 0, "Timber": 0, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
-        self.player_goods = {"Wood": 0, "Timber": 20, "Wool": 0, "Grain": 0, "Coal": 0, "Iron": 0, "Clothes": 0, "Flour": 0, "Bread": 0, "Steel": 0}
+        self.player_production = {"Wood": 0, "Timber": 0, "Wool": 0, "Clothes": 0, "Coal": 0, "Iron": 0, "Steel": 0, "Grain": 0, "Flour": 0, "Bread": 0}
+        self.player_demand = {"Wood": 0, "Timber": 0, "Wool": 0, "Clothes": 0, "Coal": 0, "Iron": 0, "Steel": 0, "Grain": 0, "Flour": 0, "Bread": 0}
+        self.player_goods = {"Wood": 0, "Timber": 20, "Wool": 0, "Clothes": 0, "Coal": 0, "Iron": 0, "Steel": 0, "Grain": 0, "Flour": 0, "Bread": 0}
         self.timer = 0
         self.speed = 1
 
 
         self.font_arial = pygame.font.SysFont("Arial", 22)
+        self.font_arial_medium = pygame.font.SysFont("Arial", 18)
         self.font_arial_small = pygame.font.SysFont("Arial", 14)
         self.game_clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.resx,self.resy))
 
         pygame.display.set_caption("ot-peliprojekti")
+        self.image_folder = "images/"
 
 
         #everything under this is currently for testing purposes only
@@ -121,37 +120,37 @@ class StrategyGame():
         return maplist
 
     def load_graphics(self):
-        grass1 = pygame.image.load("src/images/grass1.png")
-        grass2 = pygame.image.load("src/images/grass2.png")
-        grass3 = pygame.image.load("src/images/grass3.png")
-        grass4 = pygame.image.load("src/images/grass4.png")
+        grass1 = pygame.image.load(f"{self.image_folder}grass1.png")
+        grass2 = pygame.image.load(f"{self.image_folder}grass2.png")
+        grass3 = pygame.image.load(f"{self.image_folder}grass3.png")
+        grass4 = pygame.image.load(f"{self.image_folder}grass4.png")
         self.graphics_grass = [grass1, grass2, grass3, grass4]
-        ocean1 = pygame.image.load("src/images/ocean1.png")
-        ocean2 = pygame.image.load("src/images/ocean2.png")
-        ocean3 = pygame.image.load("src/images/ocean3.png")
+        ocean1 = pygame.image.load(f"{self.image_folder}ocean1.png")
+        ocean2 = pygame.image.load(f"{self.image_folder}ocean2.png")
+        ocean3 = pygame.image.load(f"{self.image_folder}ocean3.png")
         self.graphics_ocean = [ocean1, ocean2, ocean3]
-        mountain1 = pygame.image.load("src/images/mountain1.png")
-        mountain2 = pygame.image.load("src/images/mountain2.png")
-        mountain3 = pygame.image.load("src/images/mountain3.png")
+        mountain1 = pygame.image.load(f"{self.image_folder}mountain1.png")
+        mountain2 = pygame.image.load(f"{self.image_folder}mountain2.png")
+        mountain3 = pygame.image.load(f"{self.image_folder}mountain3.png")
         self.graphics_mountain = [mountain1, mountain2, mountain3]
 
     def load_icons(self):
-        road = pygame.image.load("src/images/road_icon.png")
-        houses = pygame.image.load("src/images/houses_icon.png")
-        dirtroad = pygame.image.load("src/images/dirtroad_icon.png")
-        housesmall = pygame.image.load("src/images/housesmall_icon.png")
-        demolish = pygame.image.load("src/images/demolish_icon.png")
-        upgrade = pygame.image.load("src/images/upgrade_icon.png")
-        woodcutter = pygame.image.load("src/images/woodcutter_icon.png")
-        sawmill = pygame.image.load("src/images/sawmill_icon.png")
-        sheepfarm = pygame.image.load("src/images/sheepfarm_icon.png")
-        grainfarm = pygame.image.load("src/images/grainfarm_icon.png")
-        coalmine = pygame.image.load("src/images/coalmine_icon.png")
-        ironmine = pygame.image.load("src/images/ironmine_icon.png")
-        furnace = pygame.image.load("src/images/furnace_icon.png")
-        knitter = pygame.image.load("src/images/knitter_icon.png")
-        windmill = pygame.image.load("src/images/windmill_icon.png")
-        bakery = pygame.image.load("src/images/bakery_icon.png")
+        road = pygame.image.load(f"{self.image_folder}road_icon.png")
+        houses = pygame.image.load(f"{self.image_folder}houses_icon.png")
+        dirtroad = pygame.image.load(f"{self.image_folder}dirtroad_icon.png")
+        housesmall = pygame.image.load(f"{self.image_folder}housesmall_icon.png")
+        demolish = pygame.image.load(f"{self.image_folder}demolish_icon.png")
+        upgrade = pygame.image.load(f"{self.image_folder}upgrade_icon.png")
+        woodcutter = pygame.image.load(f"{self.image_folder}woodcutter_icon.png")
+        sawmill = pygame.image.load(f"{self.image_folder}sawmill_icon.png")
+        sheepfarm = pygame.image.load(f"{self.image_folder}sheepfarm_icon.png")
+        grainfarm = pygame.image.load(f"{self.image_folder}grainfarm_icon.png")
+        coalmine = pygame.image.load(f"{self.image_folder}coalmine_icon.png")
+        ironmine = pygame.image.load(f"{self.image_folder}ironmine_icon.png")
+        furnace = pygame.image.load(f"{self.image_folder}furnace_icon.png")
+        knitter = pygame.image.load(f"{self.image_folder}knitter_icon.png")
+        windmill = pygame.image.load(f"{self.image_folder}windmill_icon.png")
+        bakery = pygame.image.load(f"{self.image_folder}bakery_icon.png")
 
         self.ui_icons = {"Road": road, "Houses": houses, "Dirt Road": dirtroad, "Small House": housesmall, "Demolish": demolish, \
                         "Upgrade": upgrade, "Woodcutter": woodcutter, "Sawmill": sawmill, "Sheep Farm": sheepfarm, "Grain Farm": grainfarm, \
@@ -161,22 +160,22 @@ class StrategyGame():
     def load_roads(self):
         dirtroad = Building("Dirt Road", "road", 0, None)
         self.buildings.append(dirtroad)
-        road_none = pygame.image.load("src/images/roadnone.png")
-        road_one_north = pygame.image.load("src/images/roadonen.png")
-        road_one_east = pygame.image.load("src/images/roadonee.png")
-        road_one_west = pygame.image.load("src/images/roadonew.png")
-        road_one_south = pygame.image.load("src/images/roadones.png")
-        road_two_straight_vertical = pygame.image.load("src/images/roadtwostraightv.png")
-        road_two_straight_horizontal = pygame.image.load("src/images/roadtwostraighth.png")
-        road_two_angle_northeast = pygame.image.load("src/images/roadtwoanglene.png")
-        road_two_angle_northwest = pygame.image.load("src/images/roadtwoanglenw.png")
-        road_two_angle_southeast = pygame.image.load("src/images/roadtwoanglese.png")
-        road_two_angle_southwest = pygame.image.load("src/images/roadtwoanglesw.png")
-        road_three_north = pygame.image.load("src/images/roadthreen.png")
-        road_three_east = pygame.image.load("src/images/roadthreee.png")
-        road_three_west = pygame.image.load("src/images/roadthreew.png")
-        road_three_south = pygame.image.load("src/images/roadthrees.png")
-        road_four = pygame.image.load("src/images/roadfour.png")
+        road_none = pygame.image.load(f"{self.image_folder}roadnone.png")
+        road_one_north = pygame.image.load(f"{self.image_folder}roadonen.png")
+        road_one_east = pygame.image.load(f"{self.image_folder}roadonee.png")
+        road_one_west = pygame.image.load(f"{self.image_folder}roadonew.png")
+        road_one_south = pygame.image.load(f"{self.image_folder}roadones.png")
+        road_two_straight_vertical = pygame.image.load(f"{self.image_folder}roadtwostraightv.png")
+        road_two_straight_horizontal = pygame.image.load(f"{self.image_folder}roadtwostraighth.png")
+        road_two_angle_northeast = pygame.image.load(f"{self.image_folder}roadtwoanglene.png")
+        road_two_angle_northwest = pygame.image.load(f"{self.image_folder}roadtwoanglenw.png")
+        road_two_angle_southeast = pygame.image.load(f"{self.image_folder}roadtwoanglese.png")
+        road_two_angle_southwest = pygame.image.load(f"{self.image_folder}roadtwoanglesw.png")
+        road_three_north = pygame.image.load(f"{self.image_folder}roadthreen.png")
+        road_three_east = pygame.image.load(f"{self.image_folder}roadthreee.png")
+        road_three_west = pygame.image.load(f"{self.image_folder}roadthreew.png")
+        road_three_south = pygame.image.load(f"{self.image_folder}roadthrees.png")
+        road_four = pygame.image.load(f"{self.image_folder}roadfour.png")
 
         self.roads = {"solo": road_none, "north": road_one_north, "east": road_one_east, "west": road_one_west, "south": road_one_south, \
             "vertical": road_two_straight_vertical, "horizontal": road_two_straight_horizontal, "northeast": road_two_angle_northeast,\
@@ -187,10 +186,10 @@ class StrategyGame():
     def load_buildings(self):
 
         housesmall = Building("Small House", "house", 0, None)
-        housesmall.set_graphic(pygame.image.load("src/images/housesmall.png"))
+        housesmall.set_graphic(pygame.image.load(f"{self.image_folder}housesmall.png"))
         housesmall.set_materialneeds("Timber", 2)
         housemedium = Building("Medium House", "house", 1, None)
-        housemedium.set_graphic(pygame.image.load("src/images/housemedium.png"))
+        housemedium.set_graphic(pygame.image.load(f"{self.image_folder}housemedium.png"))
         housemedium.set_materialneeds("Timber", 4)
         houselarge = Building("Large House", "house", 2, None)
         houselarge.set_materialneeds("Timber", 6)
@@ -199,7 +198,7 @@ class StrategyGame():
         woodcutter = Building("Woodcutter", "gather", 1, 0)
         woodcutter.set_production("Wood", 5)
         woodcutter.set_building_cost(50)
-        woodcutter.set_graphic(pygame.image.load("src/images/woodcutter.png"))
+        woodcutter.set_graphic(pygame.image.load(f"{self.image_folder}woodcutter.png"))
         woodcutter.set_upkeep(5)
 
         mineiron = Building("Iron Mine", "gather", 2, 500)
@@ -207,34 +206,34 @@ class StrategyGame():
         mineiron.set_building_cost(500)
         mineiron.set_materialneeds("Timber", 10)
         mineiron.set_surface(2)
-        mineiron.set_graphic(pygame.image.load("src/images/ironmine.png"))
+        mineiron.set_graphic(pygame.image.load(f"{self.image_folder}ironmine.png"))
         mineiron.set_upkeep(50)
         minecoal = Building("Coal Mine", "gather", 2, 500)
         minecoal.set_production("Coal", 15)
         minecoal.set_building_cost(500)
         minecoal.set_materialneeds("Timber", 10)
         minecoal.set_surface(2)
-        minecoal.set_graphic(pygame.image.load("src/images/coalmine.png"))
+        minecoal.set_graphic(pygame.image.load(f"{self.image_folder}coalmine.png"))
         minecoal.set_upkeep(50)
 
         farmgrain = Building("Grain Farm", "gather", 1, 200)
         farmgrain.set_production("Grain", 30)
         farmgrain.set_building_cost(500)
         farmgrain.set_materialneeds("Timber", 8)
-        farmgrain.set_graphic(pygame.image.load("src/images/grainfarm.png"))
+        farmgrain.set_graphic(pygame.image.load(f"{self.image_folder}grainfarm.png"))
         farmgrain.set_upkeep(50)
         farmsheep = Building("Sheep Farm", "gather", 1, 100)
         farmsheep.set_production("Wool", 30)
         farmsheep.set_building_cost(150)
         farmsheep.set_materialneeds("Timber", 4)
-        farmsheep.set_graphic(pygame.image.load("src/images/sheepfarm.png"))
+        farmsheep.set_graphic(pygame.image.load(f"{self.image_folder}sheepfarm.png"))
         farmsheep.set_upkeep(10)
 
         sawmill = Building("Sawmill", "produce", 1, 0)
         sawmill.add_requirement("Wood")
         sawmill.set_production("Timber", 5)
         sawmill.set_building_cost(100)
-        sawmill.set_graphic(pygame.image.load("src/images/sawmill.png"))
+        sawmill.set_graphic(pygame.image.load(f"{self.image_folder}sawmill.png"))
         sawmill.set_upkeep(10)
 
         knitter = Building("Knitter", "produce", 1, 100)
@@ -242,14 +241,14 @@ class StrategyGame():
         knitter.set_production("Clothes", 15)
         knitter.set_building_cost(250)
         knitter.set_materialneeds("Timber", 8)
-        knitter.set_graphic(pygame.image.load("src/images/knitter.png"))
+        knitter.set_graphic(pygame.image.load(f"{self.image_folder}knitter.png"))
         knitter.set_upkeep(15)
         millflour = Building("Windmill", "produce", 1, 200)
         millflour.add_requirement("Grain")
         millflour.set_production("Flour", 15)
         millflour.set_materialneeds("Timber", 8)
         millflour.set_building_cost(400)
-        millflour.set_graphic(pygame.image.load("src/images/windmill.png"))
+        millflour.set_graphic(pygame.image.load(f"{self.image_folder}windmill.png"))
         millflour.set_upkeep(50)
         bakery = Building("Bakery", "produce", 1, 200)
         bakery.add_requirement("Flour")
@@ -257,7 +256,7 @@ class StrategyGame():
         bakery.set_building_cost(1000)
         bakery.set_materialneeds("Timber", 12)
         bakery.set_materialneeds("Steel", 4)
-        bakery.set_graphic(pygame.image.load("src/images/bakery.png"))
+        bakery.set_graphic(pygame.image.load(f"{self.image_folder}bakery.png"))
         bakery.set_upkeep(100)
 
         furnace = Building("Furnace", "produce", 2, 500)
@@ -266,7 +265,7 @@ class StrategyGame():
         furnace.set_production("Steel", 30)
         furnace.set_building_cost(1000)
         furnace.set_materialneeds("Timber", 20)
-        furnace.set_graphic(pygame.image.load("src/images/furnace.png"))
+        furnace.set_graphic(pygame.image.load(f"{self.image_folder}furnace.png"))
         furnace.set_upkeep(150)
 
         self.buildings = [\
@@ -330,7 +329,11 @@ class StrategyGame():
             #highlight tile under the mouse cursor
             if self.current_tool != None:
                 if self.current_tool.active:
-                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour, self.current_tool_building.size)
+                    if self.current_tool_building == None:
+                        size = 1
+                    else:
+                        size = self.current_tool_building.size
+                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour, size)
                 else:
                     self.highlight_tile(self.current_tile, self.white)
             else:
@@ -342,8 +345,12 @@ class StrategyGame():
         if self.mouseoverbutton: 
             self.highlight_button(self.current_button)   
         if self.tooltip_active:
-            self.draw_tooltip(self.current_button.tooltip)        
-
+            self.draw_tooltip(self.current_button.tooltip)
+        if self.current_window != None:
+            self.draw_info_window(self.current_window)
+        if self.current_tile != None:
+            if self.current_tile.info_panel:
+                self.draw_info_window("tile")
 
         pygame.display.flip()
         self.game_clock.tick(60)
@@ -399,30 +406,29 @@ class StrategyGame():
                 if event.key == K_r:
                     print(self.current_tile.timer)
                     print(self.current_tile.building.production)
+                if event.key == K_n:
+                    for need in self.current_tile.needs:
+                        print(need)
+                        print(self.current_tile.needs[need])
                 if event.key == K_p:
-                    print(f"Production: {self.player_production}")
-                    print(f"Demand: {self.player_demand}")
-                    print(f"Buildings: {self.player_buildings}")
-                    print(f"Goods: {self.player_goods}")       
+                    if self.current_window == "production":
+                        self.current_window = None
+                    else:
+                        self.current_window = "production"   
                 if event.key == K_q:
                     if self.speed > 1:
-                        self.speed -= 1
+                        self.speed /= 2
                 if event.key == K_e:
-                    if self.speed < 10:
-                        self.speed += 1    
-                if event.key == K_1:
-                    print(self.speed)
+                    if self.speed < 8:
+                        self.speed *= 2
                 if event.key == K_2:
                     self.player_goods["Timber"] += 20
                 if event.key == K_3:
                     self.player_goods["Steel"] += 20
                 if event.key == K_4:
-                    self.player_balance += 10000       
-                if event.key == K_l:
-                    for good in self.player_production:
-                        print(good)
-                if event.key == K_n:
-                    print(self.current_tile.building.name)
+                    self.player_balance += 10000
+                if event.key == K_5:
+                    print(self.player_buildings)
 
             if event.type == pygame.KEYUP:
                 if event.key == self.keybind_up:
@@ -440,6 +446,9 @@ class StrategyGame():
 
             #mouse click is checked here
             if event.type == pygame.MOUSEBUTTONDOWN:
+                self.mbdown = True
+
+            if self.mbdown:
                 state = pygame.mouse.get_pressed()
                 if state[0]:
                     #if a button is clicked
@@ -457,19 +466,23 @@ class StrategyGame():
                             if self.current_tool.name == "Demolish":
                                 #reset tile to default and update player stats accordingly
                                 if self.current_tile.has_road() == False:
-                                    self.player_buildings[self.current_tile.building.name] -= 1
-                                    if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
-                                        self.player_production[self.current_tile.building.production[0]] -= int(60/self.current_tile.building.production[1])
+                                    if self.current_tile.has_building():
+                                        self.player_buildings[self.current_tile.building.name] -= 1
+                                        if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
+                                            self.player_production[self.current_tile.building.production[0]] -= int(60/self.current_tile.building.production[1])
                                 self.current_tile.empty()
                                 self.update_roads(self.current_tile.location)
                             if self.current_tool.name == "Upgrade":
                                 if self.current_tile.housetier == 0:
-                                    self.current_tile.upgrade(self.buildings[1])
+                                    self.current_tile.upgrade(self.find_building("Medium House"))
+                                    self.player_buildings["Medium House"] += 1
+                                    self.player_buildings["Small House"] -= 1
+                                    self.current_tile.set_needs("Bread")
                             if self.current_tool.name == "Build Road":
-                                self.build_road(self.current_tile)
-                                self.update_roads(self.current_tile.location)
+                                    self.build_road(self.current_tile)
+                                    self.update_roads(self.current_tile.location)
                         else:
-                            pass
+                            self.current_tile.click()
 
                     if self.current_button:
                         if self.current_button.type == "main":
@@ -486,13 +499,22 @@ class StrategyGame():
                         elif self.current_button.type == "road":
                             self.current_tool_building = self.current_button.building
                             self.current_tool = self.player_tools[3]
-
-            #right click will close menus and exit tools
+                #right click will close menus and exit tools
                 if state[2]:
                     if self.menu_open:
                         self.close_menu()
                     if self.current_tool != None:
                         self.close_tool()
+                    if self.current_window != None:
+                        self.close_window()
+                    for row in self.map:
+                        for tile in row:
+                            tile.info_panel = False
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                state = pygame.mouse.get_pressed()
+                self.mbdown = False
+
 
             #if mouse position is on a tile, that tile should be highligted
             if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
@@ -547,7 +569,7 @@ class StrategyGame():
                             self.tooltip_active = False
                     else:
                         self.mouseoverbutton = False
-                        self.current_button = False
+                        self.current_button = None
                         self.tooltip_active = False
             
 
@@ -565,6 +587,14 @@ class StrategyGame():
         if self.camera_right:
             self.move_camera("right")
 
+        #check if windows are open
+        for button in self.ui_buttons:
+            if button.type == "window":
+                if button.active:
+                    self.current_window = button.window
+                else:
+                    self.current_window = None
+
 
         #increase timer for tiles with a building
         #this is used to determine if the tile is producing something
@@ -577,7 +607,7 @@ class StrategyGame():
                         #check if building is production or gather building
                         if tile.building.type == "produce" or tile.building.type == "gather":
                             #check if production interval is reached
-                            if tile.timer == tile.building.production[1]:
+                            if tile.timer >= tile.building.production[1]-1:
                                 #produce goods for tile
                                 #the produce goods method will determine whether tile building is eligible to produce
                                 self.produce_goods(tile)
@@ -587,12 +617,13 @@ class StrategyGame():
                                 #otherwise increase tile timer
                                 tile.timer += 1
                         elif tile.building.type == "house":
-                            #citizens need goods every 4 minutes
-                            if tile.timer >= 240:
+                            #citizens need goods every 5 minutes (300 seconds)
+                            for need in tile.needs:
+                                if tile.needs[need] >= 299:
                                 #consume goods
-                                self.consume_goods(tile)
-                            else:
-                                tile.timer += 1
+                                    self.consume_goods(tile)
+                                else:
+                                    tile.need_timer(need, 1)
                         
     def create_map(self, map: list):
         
@@ -615,6 +646,12 @@ class StrategyGame():
             y += 1
             self.map.append(newrow)
 
+    def find_building(self, name: str):
+        #find a building from player_buildings based on name
+        for building in self.player_buildings:
+            if building.name == name:
+                return building
+
     def build(self, building: Building):
         tile = self.current_tile
         #build selected building to selected tile
@@ -635,7 +672,7 @@ class StrategyGame():
                 if building.type != "house":
                     tile.set_timer(0)
                 elif building.type == "house":
-                    tile.set_timer(240)
+                    tile.set_needs("Clothes")
                 self.player_buildings[building.name] += 1
             else:
                 pass
@@ -712,7 +749,11 @@ class StrategyGame():
     def build_road(self, tile: Tile):
         #builds a road on selected tile
         road = self.select_road(tile)
-        tile.place_road(road)
+        #check if tile is eligible for building
+        if tile.terrain == 1:
+            tile.place_road(road)
+        else:
+            pass
 
     def update_roads(self, location: tuple):
         #updates all the tiles with roads to match possible new roads
@@ -866,7 +907,8 @@ class StrategyGame():
     def update_demand(self):
         #this is used to update player demand of goods
         #citizens needs are pulled from list
-        citizen_needs = ["Clothes", "Bread"]
+        peasant_needs = ["Clothes"]
+        worker_needs = ["Clothes", "Bread"]
         #check all buildings
         for item in self.player_buildings:
             #check if player currently has any of these buildings
@@ -880,9 +922,13 @@ class StrategyGame():
                         demand = 60/building.production[1]
                         self.player_demand[need] = int(self.player_buildings[item] * demand)
                 elif building.type == "house":
-                    for need in citizen_needs:
-                        #citizens need 1 good per house every 4 minutes
-                        self.player_demand[need] = int(0.25*self.player_buildings[item])
+                    #citizens need 1 good per house every 5 minutes
+                    if building.name == "Small House":
+                        for need in peasant_needs:
+                            self.player_demand[need] = 0.2*self.player_buildings[item]
+                    if building.name == "Medium House":    
+                        for need in worker_needs:                     
+                            self.player_demand[need] = int(0.2*self.player_buildings[item])
 
                 
 
@@ -902,7 +948,7 @@ class StrategyGame():
         if tile.building.name == "Small House":
             if clothes > 0:
                 self.player_goods["Clothes"] -= 1
-                tile.set_timer(0)
+                tile.need_timer("Clothes", 0)
                 tile.set_income(10)
                 tile.set_population(8)
             else:
@@ -911,20 +957,20 @@ class StrategyGame():
         elif tile.building.name == "Medium House":
             if clothes > 0:
                 self.player_goods["Clothes"] -= 1
-                tile.set_timer(0)
-                print("clothes sold to workers")
+                tile.need_timer("Clothes", 0)
                 tile.set_income(18)
                 tile.set_population(16)
                 if bread > 0:
                     self.player_goods["Bread"] -= 1
-                    tile.set_timer(0)
+                    tile.need_timer("Bread", 0)
                     tile.set_income(36)
                     tile.set_population(30)
                 else:
                     tile.set_income(18)
                     tile.set_population(16)
             elif bread > 0:
-                bread -= 1
+                self.player_goods["Bread"] -= 1
+                tile.need_timer("Bread", 0)
                 tile.set_income(20)
                 tile.set_population(18)
             
@@ -964,17 +1010,17 @@ class StrategyGame():
         gathering = UIButton("Gathering", (660, 640), (70,70), "main")
         gathering.set_graphic(self.ui_icons["Woodcutter"])
         gathering.menu_addbutton("Woodcutter", 0)
-        gathering.menu_addbutton("Grain Farm", 1)
         gathering.menu_addbutton("Sheep Farm", 0)
         gathering.menu_addbutton("Iron Mine", 1)
         gathering.menu_addbutton("Coal Mine", 1)
+        gathering.menu_addbutton("Grain Farm", 1)
         production = UIButton("Production", (740, 640), (70,70), "main")
         production.set_graphic(self.ui_icons["Furnace"])
         production.menu_addbutton("Sawmill", 0)
+        production.menu_addbutton("Knitter", 0)
         production.menu_addbutton("Furnace", 1)
         production.menu_addbutton("Windmill", 1)
-        production.menu_addbutton("Bakery", 1)
-        production.menu_addbutton("Knitter", 0)
+        production.menu_addbutton("Bakery", 1)        
         balance = UIButton("Balance", (455, 10), (80,30), "info")
         balance.set_info(f"{self.player_balance} $")
         income = UIButton("Income", (550, 10), (80,30), "info")
@@ -996,7 +1042,9 @@ class StrategyGame():
         population.set_info(f"Population: {total_population}")
         population.tooltip_addline(f"Peasants: {peasants}")
         population.tooltip_addline(f"Workers: {workers}")
-        self.ui_buttons = [road, houses, gathering, production, balance, income, timber, population]
+        production_panel = UIButton("Production panel", (1030, 660),(50,50), "window")
+        production_panel.set_window("production")
+        self.ui_buttons = [road, houses, gathering, production, balance, income, timber, population, production_panel]
 
     def draw_button(self, button):
 
@@ -1037,7 +1085,7 @@ class StrategyGame():
         else:
             extraline = 0
         x = 1100
-        y = 650
+        y = 620
         frame_width = 3
         tooltip_frame = pygame.draw.rect(self.screen, self.black, (x-frame_width, y-sizey-frame_width, sizex+frame_width*2, sizey+extraline+frame_width*2))
         tooltip_box = pygame.draw.rect(self.screen, self.lgray, (x, y-sizey, sizex, sizey+extraline))
@@ -1060,6 +1108,102 @@ class StrategyGame():
             self.menu_buttons(menu)
         else:
             self.close_menu()
+
+    def draw_info_window(self, type: str):
+        
+        #this is the graphic for the window
+        #type stands for type of window to determine information written in it
+        x = 1000
+        y = 80
+        sizexl = 260
+        sizeyl = 500
+        sizexs = 200
+        sizeys = 200
+        vline = "|"
+        #this is the graphic and information shown in an open window
+        #this window is the production panel of the player
+        #it will show statistics for each good the player is producing
+        #the info shown is current production, demand and inventory
+        if type == "production":
+            window_frame = pygame.draw.rect(self.screen, self.black, (x-2, y-2, sizexl+2, sizeyl+2))
+            window_inner = pygame.draw.rect(self.screen, self.mgray, (x, y, sizexl-2, sizeyl-2))
+            #linevar is the variable to find the y coordinate for the text
+            linevar = 20
+            title = ["Item", "Production", "Demand", "Inventory"]
+            titlestr = self.font_arial_small.render(f"{title[0]:<15} {vline} {title[1]:>10} {vline} {title[2]:>5} {vline} {title[3]:>5}", True, self.black)
+            self.screen.blit(titlestr, (x+10, y+linevar))
+            linevar += 20
+            splitter = self.font_arial_small.render("------------------------------------------------------------", True, self.black)
+            self.screen.blit(splitter, (x+10, y+linevar))
+            linevar += 20
+            for product in self.player_production:
+                #define values for easy formatting and readability
+                splitline = self.font_arial_small.render(vline, True, self.black)
+                name = self.font_arial_small.render(product, True, self.black)
+                pro = self.font_arial_small.render(str(self.player_production[product]), True, self.black)
+                dem = self.font_arial_small.render(str(self.player_demand[product]), True, self.black)
+                inv = self.font_arial_small.render(str(self.player_goods[product]), True, self.black)
+                #print all the text on screen
+                self.screen.blit(name, (x+10, y+linevar))
+                self.screen.blit(splitline, (x+68, y+linevar))
+                self.screen.blit(pro, (x+80, y+linevar))
+                self.screen.blit(splitline, (x+131, y+linevar))
+                self.screen.blit(dem, (x+143, y+linevar))
+                self.screen.blit(splitline, (x+182, y+linevar))
+                self.screen.blit(inv, (x+194, y+linevar))
+                linevar += 20
+            #info about a specific tile is drawn here
+            #info shown is income/upkeep of a given building in a tile as well as the name of the building
+            #production interval is also shown here (as in, how long until the next production)
+            #for houses, the next interval at which the residents will buy goods is shown
+        elif type == "tile":
+            if self.current_tile.has_building():
+                window_frame = pygame.draw.rect(self.screen, self.black, (x-2, y-2, sizexs+2, sizeys+2))
+                window_inner = pygame.draw.rect(self.screen, self.mgray, (x, y, sizexs-2, sizeys-2))
+                #this is the name of the building
+                buildingname = self.font_arial_small.render(f"{self.current_tile.building.name}", True, self.black)
+                income = self.current_tile.income
+                #this is income/upkeep of the building
+                if income > 0:
+                    incometext = self.font_arial_small.render(f"Income: {self.current_tile.income} $/s", True, self.black)
+                else:
+                    incometext = self.font_arial_small.render(f"Upkeep: {self.current_tile.income*-1} $/s", True, self.black)
+                #this is the time left until next production/purchase interval
+                #it will stop at 0 until the purchase can be made
+                #after that it will reset to 300 seconds
+                if self.current_tile.building.type == "house":
+                    intervals = {}
+                    for need in self.current_tile.needs:
+                        interval = 300 - self.current_tile.needs[need]
+                        intervals[need] = interval
+                if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
+                    interval = self.current_tile.building.production[1] - self.current_tile.timer
+
+                
+                #the text in the window is drawn here
+                self.screen.blit(buildingname, (x+10, y+10))
+                self.screen.blit(incometext, (x+10, y+30))
+                #second line variable to determine the y coordinate of the text when there's multiple lines
+                linevar2 = 70
+                #need intervals for houses is drawn here
+                if self.current_tile.building.type == "house":
+                    for need in self.current_tile.needs:
+                        needtext = self.font_arial_small.render(f"Residents need more {need}", True, self.black)
+                        intervaltext =  self.font_arial_small.render(f"in {intervals[need]} seconds", True, self.black)
+                        self.screen.blit(needtext, (x+10, y+linevar2))
+                        self.screen.blit(intervaltext, (x+10, y+linevar2+20))
+                        linevar2 += 40
+                #production interval for production/gathering building is drawn here
+                if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
+                    productiontext = self.font_arial_small.render(f"Producing {self.current_tile.building.production[0]}", True, self.black)
+                    intervaltext = self.font_arial_small.render(f"in {interval} seconds", True, self.black)
+                    self.screen.blit(productiontext, (x+10, y+linevar2))
+                    self.screen.blit(intervaltext, (x+10, y+linevar2+20))
+                    linevar2 += 40
+
+
+
+
 
 
     def draw_menu(self, menu: list):
@@ -1101,8 +1245,11 @@ class StrategyGame():
                             new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
                             new_button.tooltip_addline(f"Every {new_button.building.production[1]} seconds")
                             new_button.tooltip_addline(f"")
+                            new_button.tooltip_addline(f"Upkeep cost: {building.upkeep} $/s")
                             timber = building.materialneeds["Timber"]
                             steel = building.materialneeds["Steel"]
+                            if building.surface == 2:
+                                new_button.tooltip_addline(f"Must be built on mountain")
                             if steel > 0:
                                 new_button.tooltip_addline(f"{timber} timber, {steel} steel, {building.building_cost} $")
                             else:
@@ -1111,6 +1258,7 @@ class StrategyGame():
                             new_button.tooltip_addline(f"Produces {new_button.building.production[0]}")
                             new_button.tooltip_addline(f"Every {new_button.building.production[1]} seconds")
                             needs = ""
+                            new_button.tooltip_addline(f"Upkeep cost: {building.upkeep}")
                             for need in building.goodneeds:
                                 needs += f"{need}"
                                 if building.goodneeds.index(need) < len(building.goodneeds)-1:
@@ -1136,10 +1284,12 @@ class StrategyGame():
             button.set_active(False)
             self.ui_menu_buttons = []
 
-    def open_window(self, name: str):
-        
-        #opens a new window in game
-        pass
+    def close_window(self):
+        self.current_window = None
+        for button in self.ui_buttons:
+            if button.type == "window":
+                button.set_active(False)
+
 
     def tool_highlight_tile(self, tile: Tile, colour: tuple, size: int):
         #if a tool is selected, the highlighting of tiles will be different
@@ -1199,6 +1349,11 @@ class StrategyGame():
 
         self.bottombar()
         self.topbar()
+        self.screen.blit(self.font_arial_medium.render("WASD to move camera", True, self.black), (30, 10))
+        self.screen.blit(self.font_arial_medium.render("Right click to close tools and windows", True, self.black), (30, 25))
+        gamespeed = self.font_arial.render(f"Game speed: {int(self.speed)}", True, self.black)
+        self.screen.blit(self.font_arial_medium.render(f"Q to decrease, E to increase", True, self.black), (1050,40))
+        self.screen.blit(gamespeed, (1050,10))
         for button in self.ui_buttons:
             self.draw_button(button)
         if self.menu_open:
@@ -1231,6 +1386,7 @@ class UIButton():
         self.tool = None
         self.building = None
         self.info = None
+        self.window = None
 
     def click(self):
 
@@ -1260,10 +1416,16 @@ class UIButton():
 
 
     def set_tool(self, tool):
+        #define if button opens a tool
         self.tool = tool
 
     def set_graphic(self, image: str):
+        #define what icon is on the button
         self.graphic = image
+
+    def set_window(self, name: str):
+        #define if button opens a window
+        self.window = name
 
     def tooltip_addline(self, text: str):
         

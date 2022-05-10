@@ -124,8 +124,8 @@ class MapGenerator():
             x = 0
 
         #maximum size for mountains and lakes is 8*8
-        #minimum size is 2*2
-        size = randint(2,8)
+        #minimum size is 4*4
+        size = randint(4,8)
         first_possible_row = 0
         last_possible_row = 0
 
@@ -153,7 +153,8 @@ class MapGenerator():
                     if border < tile < int(len(map[row])/2):
                         if map[row][tile] == 1:
                             first_possible_tile = tile+1
-                elif last_possible_tile == 0:
+            for tile in range(len(map[row])):
+                if last_possible_tile == 0:
                     if int(len(map[row])/2) < tile < len(map[row])-border:
                         if map[row][tile] == 0:
                             last_possible_tile = tile-2-size
@@ -215,3 +216,5 @@ class MapGenerator():
             newmap.append(newrow)
 
         return newmap
+
+MapGenerator(128).get_map()

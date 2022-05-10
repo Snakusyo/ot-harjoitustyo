@@ -22,8 +22,10 @@ class Tile():
         self.building = None
         self.road = None
         self.timer = 0
+        self.needs = {}
         self.income = 0
         self.population = 0
+        self.info_panel = False
 
     def set_graphic(self, filename: str):
         #the graphic of the tile terrain is determined here
@@ -32,6 +34,20 @@ class Tile():
     def set_income(self, amount: int):
         #set the income for the tile
         self.income = amount
+
+    def set_needs(self, name: str):
+        #this is for tiles with resident buildings
+        #name stands for the name of the good that is needed (ie. clothes, bread)
+        #timer is set to 300 as default and will be adjusted from need_timer
+        self.needs[name] = 300
+
+    def need_timer(self, name: str, timer: int):
+        #need timer for citizen adjusted here
+        #if timer = 0, it is reset, else the given amount of time is added to the timer
+        if timer == 0:
+            self.needs[name] = 0
+        else:
+            self.needs[name] += timer 
 
     def set_population(self, amount: int):
         #set population of tile
@@ -101,6 +117,13 @@ class Tile():
         self.building = None
         self.road = None
         self.income = 0
+
+    def click(self):
+        if self.has_building():
+            if self.info_panel:
+                self.info_panel = False
+            else:
+                self.info_panel = True
 
     def __str__(self):
         #for testing purposes only
