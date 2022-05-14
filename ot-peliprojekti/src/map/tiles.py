@@ -26,20 +26,30 @@ class Tile():
         self.income = 0
         self.population = 0
         self.info_panel = False
+        self.service_needs = []
 
     def set_graphic(self, filename: str):
         #the graphic of the tile terrain is determined here
         self.graphic = filename
 
     def set_income(self, amount: int):
-        #set the income for the tile
+        #set the default income for the tile
         self.income = amount
+
+    def adjust_income(self, amount: int):
+        #increase or decrease tile income
+        self.income += amount
 
     def set_needs(self, name: str):
         #this is for tiles with resident buildings
         #name stands for the name of the good that is needed (ie. clothes, bread)
         #timer is set to 300 as default and will be adjusted from need_timer
         self.needs[name] = 300
+
+    def set_service_needs(self, name: str):
+        #this is for tiles with resident buildings
+        #name stands for the service (ie. market, school)
+        self.service_needs.append(name)
 
     def need_timer(self, name: str, timer: int):
         #need timer for citizen adjusted here
@@ -109,14 +119,17 @@ class Tile():
         #this is called if a house in this tile is upgraded
         self.building = building
         self.housetier += 1
-        self.income *= 2
-        self.population *= 2
 
     def empty(self):
         #this is called when an object in this tile is destroyed
         self.building = None
         self.road = None
         self.income = 0
+        self.needs = {}
+        self.service_needs = []
+        self.population = 0
+        self.info_panel = False
+        self.timer = 0
 
     def click(self):
         if self.has_building():

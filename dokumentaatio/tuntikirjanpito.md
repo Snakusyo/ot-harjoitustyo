@@ -17,4 +17,9 @@
 | 25.4. | 12   | Koodin kirjoittamista ja grafiikan piirtämistä |
 | 2.5.  | 4    | Koodin kirjoittamista ja testaamista |
 | 3.5.  | 8    | Koodin kirjoittamista ja testaamista |
-|  yht  | 77   |       |
+| 5.5.  | 6    | Koodin kirjoittamista ja testaamista |
+| 6.5.  | 4    | Koodin kirjoittamista ja testaamista |
+| 12.5. | 8    | Koodin kirjoittamista, testaamista ja grafiikan piirtämistä |
+| 13.5. | 4    | Koodin kirjoittamista, testaamista ja grafiikan piirtämistä |
+| 14.5. | 3    | Koodin hienosäätöä ja viimeiset optimoinnit |
+|  yht  | 102   |       |

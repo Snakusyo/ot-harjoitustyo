@@ -164,7 +164,10 @@ class MapGenerator():
         #this is where the mountain/lake is generated
         for i in range(size):
             for u in range(size):
-                map[starting_row+i][starting_tile+u] = x
+                if (i == 0 or i == size-1) and (u == 0 or u == size-1):
+                    pass
+                else:
+                    map[starting_row+i][starting_tile+u] = x
 
         return map
 
@@ -188,7 +191,9 @@ class MapGenerator():
             if min_size <= island_size <= max_size:
                 break
 
-
+        #possibly add a couple of lakes on the map
+        self.add_mountain_or_lake(map_with_island, "lake")
+        self.add_mountain_or_lake(map_with_island, "lake")
 
         #add a mountain to map
         mountain = False
@@ -203,9 +208,6 @@ class MapGenerator():
                 break
             else:
                 self.add_mountain_or_lake(map_with_island, "mountain")
-                
-        self.add_mountain_or_lake(map_with_island, "lake")
-        self.add_mountain_or_lake(map_with_island, "lake")
 
         #turn the map 90 degrees because "oops"
         newmap = []

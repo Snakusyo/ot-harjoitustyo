@@ -28,10 +28,15 @@ class Building():
         self.upkeep = 0
         self.building_cost = 0
         self.materialneeds = {"Timber": 0, "Steel": 0}
+        self.upgrade_cost = {"Timber": 0, "Steel": 0}
 
     def set_production(self, name: str, time: int):
         #name of product and time (in seconds) it takes to produce
         self.production = (name, time)
+
+    def set_upgrade_cost(self, material: str, amount: int):
+        #this is used to set the upgrade cost of a building
+        self.upgrade_cost[material] = amount
 
     def set_surface(self, surface: int):
         #set surface type that building can be built on
