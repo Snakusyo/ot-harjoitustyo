@@ -1,4 +1,3 @@
-from game import StrategyGame
+from main_menu import MainMenu
 
-
-StrategyGame()
+MainMenu()

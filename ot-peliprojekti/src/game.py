@@ -1,6 +1,3 @@
-from asyncio import gather
-from email.mime import image
-from json import load
 import pygame
 from pygame.locals import *
 from map.tiles import Tile
@@ -8,7 +5,6 @@ from map.mapgenerator import MapGenerator
 from random import randint
 from random import choice
 from objects.buildings import Building
-
 
 class StrategyGame():
 
@@ -49,6 +45,7 @@ class StrategyGame():
         self.ui_icons = []
         self.current_window = None
         self.mbdown = False
+        self.gameover = False
 
         #setup default colours
         self.black = (0,0,0)
@@ -346,32 +343,40 @@ class StrategyGame():
                 row += 1
             self.tiles_on_screen.append(screenrow)
             tile += 1
-        if self.mouseovertile:
-            #highlight tile under the mouse cursor
-            if self.current_tool != None:
-                if self.current_tool.active:
-                    if self.current_tool_building == None:
-                        size = 1
+        if self.gameover == False:
+            if self.mouseovertile:
+                #highlight tile under the mouse cursor
+                if self.current_tool != None:
+                    if self.current_tool.active:
+                        if self.current_tool_building == None:
+                            size = 1
+                        else:
+                            size = self.current_tool_building.size
+                        self.tool_highlight_tile(self.current_tile, self.current_tool.colour, size)
                     else:
-                        size = self.current_tool_building.size
-                    self.tool_highlight_tile(self.current_tile, self.current_tool.colour, size)
+                        self.highlight_tile(self.current_tile, self.white)
                 else:
                     self.highlight_tile(self.current_tile, self.white)
-            else:
-                self.highlight_tile(self.current_tile, self.white)
 
-        if self.menu_open:
-            self.draw_menu(self.current_menu)
-        self.draw_ui()
-        if self.mouseoverbutton: 
-            self.highlight_button(self.current_button)   
-        if self.tooltip_active:
-            self.draw_tooltip(self.current_button.tooltip)
-        if self.current_window != None:
-            self.draw_info_window(self.current_window)
-        if self.active_tile != None:
-            if self.current_tile.info_panel:
-                self.draw_info_window("tile")
+            if self.menu_open:
+                self.draw_menu(self.current_menu)
+            self.draw_ui()
+            if self.mouseoverbutton: 
+                self.highlight_button(self.current_button)   
+            if self.tooltip_active:
+                self.draw_tooltip(self.current_button.tooltip)
+            if self.current_window != None:
+                self.draw_info_window(self.current_window)
+            if self.active_tile != None:
+                if self.current_tile.info_panel:
+                    self.draw_info_window("tile")
+        elif self.gameover:
+            self.draw_ui()
+            gameovertext = self.font_arial.render("Game Over", True, self.red)
+            presskeytext = self.font_arial.render("Press any key to exit", True, self.red)
+
+            self.screen.blit(gameovertext, (580, 320))
+            self.screen.blit(presskeytext, (550, 350))
 
         pygame.display.flip()
         self.game_clock.tick(60)
@@ -398,203 +403,166 @@ class StrategyGame():
 
             #player keyboard input is tracked here
 
-            if event.type == pygame.KEYDOWN:
+            if self.player_balance < -1000:
+                self.game_over()
+            if self.gameover:
 
-                #general input is here
-                if event.key == pygame.K_ESCAPE:
+                if event.type == pygame.KEYDOWN:
                     pygame.quit()
                     exit()
 
-                #camera movement keys here
-                if event.key == self.keybind_up:
-                    self.camera_up = True
-                if event.key == self.keybind_down:
-                    self.camera_down = True
-                if event.key == self.keybind_left:
-                    self.camera_left = True
-                if event.key == self.keybind_right:
-                    self.camera_right = True
-                if event.key == K_t:
-                    print(f"current time: {self.seconds}")
-                if event.key == K_y:
-                    print(f"Tile Info: \n \
-                    Terrain = {self.current_tile.terrain} \n \
-                        Building = {self.current_tile.building} \n \
-                            Location = {self.current_tile.location} \n \
-                                Road = {self.current_tile.has_road()}")
-                #placeholder
-                #placeholder
-                if event.key == K_r:
-                    print(self.current_tile.timer)
-                    print(self.current_tile.building.production)
-                if event.key == K_u:
-                    print(self.population_tier)
-                if event.key == K_n:
-                    for need in self.current_tile.needs:
-                        print(need)
-                        print(self.current_tile.needs[need])
-                if event.key == K_p:
-                    if self.current_window == "production":
-                        self.current_window = None
-                    else:
-                        self.current_window = "production"   
-                if event.key == K_q:
-                    if self.speed > 1:
-                        self.speed /= 2
-                if event.key == K_e:
-                    if self.speed < 8:
-                        self.speed *= 2
-                if event.key == K_2:
-                    self.player_goods["Timber"] += 20
-                    self.player_goods["Clothes"] += 20
-                    self.player_goods["Steel"] += 20
-                if event.key == K_4:
-                    self.player_balance += 100000
-                if event.key == K_5:
-                    for good in self.player_goods:
-                        self.player_goods[good] += 20
+            else:
+                if event.type == pygame.KEYDOWN:
 
-            if event.type == pygame.KEYUP:
-                if event.key == self.keybind_up:
-                    self.camera_up = False
-                if event.key == self.keybind_down:
-                    self.camera_down = False
-                if event.key == self.keybind_left:
-                    self.camera_left = False
-                if event.key == self.keybind_right:
-                    self.camera_right = False
+                    #general input is here
+                    if event.key == pygame.K_ESCAPE:
+                        pygame.quit()
+                        exit()
 
-            #mouse position is checked here
-            self.mouse_position = pygame.mouse.get_pos()
+                    #camera movement keys here
+                    if event.key == self.keybind_up:
+                        self.camera_up = True
+                    if event.key == self.keybind_down:
+                        self.camera_down = True
+                    if event.key == self.keybind_left:
+                        self.camera_left = True
+                    if event.key == self.keybind_right:
+                        self.camera_right = True
+
+                    if event.key == K_p:
+                        if self.current_window == "production":
+                            self.current_window = None
+                        else:
+                            self.current_window = "production"   
+                    if event.key == K_q:
+                        if self.speed > 1:
+                            self.speed /= 2
+                    if event.key == K_e:
+                        if self.speed < 8:
+                            self.speed *= 2
+
+                if event.type == pygame.KEYUP:
+                    if event.key == self.keybind_up:
+                        self.camera_up = False
+                    if event.key == self.keybind_down:
+                        self.camera_down = False
+                    if event.key == self.keybind_left:
+                        self.camera_left = False
+                    if event.key == self.keybind_right:
+                        self.camera_right = False
+
+                #mouse position is checked here
+                self.mouse_position = pygame.mouse.get_pos()
 
 
-            #mouse click is checked here
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.mbdown = True
+                #mouse click is checked here
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.mbdown = True
 
-            if self.mbdown:
-                state = pygame.mouse.get_pressed()
-                if state[0]:
-                    #if a button is clicked
-                    if self.mouseoverbutton:
-                        self.current_button.click()
-                    #if a tile is clicked
-                    elif self.mouseovertile:
+                if self.mbdown:
+                    state = pygame.mouse.get_pressed()
+                    if state[0]:
+                        #if a button is clicked
+                        if self.mouseoverbutton:
+                            self.current_button.click()
+                        #if a tile is clicked
+                        elif self.mouseovertile:
+                            if self.menu_open:
+                                self.close_menu()
+                            #if the a tool is active
+                            if self.current_tool != None:
+                                if self.current_tool.name == "Build":
+                                    if self.current_tile.building == None:
+                                        self.build(self.current_tool_building)
+                                if self.current_tool.name == "Demolish":
+                                    #reset tile to default and update player stats accordingly
+                                    if self.current_tile.has_road() == False:
+                                        if self.current_tile.has_building():
+                                            self.player_buildings[self.current_tile.building.name] -= 1
+                                            if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
+                                                self.player_production[self.current_tile.building.production[0]] -= int(60/self.current_tile.building.production[1])
+                                    self.current_tile.empty()
+                                    if self.current_tile in self.tiles_with_buildings:
+                                        self.tiles_with_buildings.pop(self.tiles_with_buildings.index(self.current_tile))
+                                    self.update_roads(self.current_tile.location)
+                                if self.current_tool.name == "Upgrade":
+                                    if self.current_tile.housetier == 0:
+                                        if self.upgrade_available(self.current_tile):
+                                            self.current_tile.upgrade(self.find_building("Medium House"))
+                                            self.player_buildings["Medium House"] += 1
+                                            self.player_buildings["Small House"] -= 1
+                                            self.current_tile.set_needs("Bread")
+                                            self.current_tile.set_service_needs("School")
+                                            if self.population_tier < 2:
+                                                self.population_tier = 2
+                                    elif self.current_tile.housetier == 1:
+                                        if self.upgrade_available(self.current_tile):
+                                            self.current_tile.upgrade(self.find_building("Large House"))
+                                            self.player_buildings["Medium House"] -= 1
+                                            self.player_buildings["Large House"] += 1
+                                            self.current_tile.set_needs("Coffee")
+                                            if self.population_tier < 3:
+                                                self.population_tier = 3
+                                if self.current_tool.name == "Build Road":
+                                        self.build_road(self.current_tile)
+                                        self.update_roads(self.current_tile.location)
+                            else:
+                                self.current_tile.click()
+                                self.active_tile = self.current_tile
+
+                        if self.current_button:
+                            if self.current_button.type == "main":
+                                if self.current_button.is_active():
+                                    self.open_menu(self.current_button.menu)
+                                    self.menu_location = self.current_button.location
+                            elif self.current_button.type == "tool":
+                                if self.current_button.tool != None:
+                                    self.current_tool = self.current_button.tool
+                            elif self.current_button.type == "building":
+                                self.current_tool_building = self.current_button.building
+                                self.current_tool = self.player_tools[2]
+                                self.close_menu()
+                            elif self.current_button.type == "road":
+                                self.current_tool_building = self.current_button.building
+                                self.current_tool = self.player_tools[3]
+                    #right click will close menus and exit tools
+                    if state[2]:
                         if self.menu_open:
                             self.close_menu()
-                        #if the a tool is active
                         if self.current_tool != None:
-                            if self.current_tool.name == "Build":
-                                if self.current_tile.building == None:
-                                    self.build(self.current_tool_building)
-                            if self.current_tool.name == "Demolish":
-                                #reset tile to default and update player stats accordingly
-                                if self.current_tile.has_road() == False:
-                                    if self.current_tile.has_building():
-                                        self.player_buildings[self.current_tile.building.name] -= 1
-                                        if self.current_tile.building.type == "gather" or self.current_tile.building.type == "produce":
-                                            self.player_production[self.current_tile.building.production[0]] -= int(60/self.current_tile.building.production[1])
-                                self.current_tile.empty()
-                                if self.current_tile in self.tiles_with_buildings:
-                                    self.tiles_with_buildings.pop(self.tiles_with_buildings.index(self.current_tile))
-                                self.update_roads(self.current_tile.location)
-                            if self.current_tool.name == "Upgrade":
-                                if self.current_tile.housetier == 0:
-                                    if self.upgrade_available(self.current_tile):
-                                        self.current_tile.upgrade(self.find_building("Medium House"))
-                                        self.player_buildings["Medium House"] += 1
-                                        self.player_buildings["Small House"] -= 1
-                                        self.current_tile.set_needs("Bread")
-                                        self.current_tile.set_service_needs("School")
-                                        if self.population_tier < 2:
-                                            self.population_tier = 2
-                                elif self.current_tile.housetier == 1:
-                                    if self.upgrade_available(self.current_tile):
-                                        self.current_tile.upgrade(self.find_building("Large House"))
-                                        self.player_buildings["Medium House"] -= 1
-                                        self.player_buildings["Large House"] += 1
-                                        self.current_tile.set_needs("Coffee")
-                                        if self.population_tier < 3:
-                                            self.population_tier = 3
-                            if self.current_tool.name == "Build Road":
-                                    self.build_road(self.current_tile)
-                                    self.update_roads(self.current_tile.location)
-                        else:
-                            self.current_tile.click()
-                            self.active_tile = self.current_tile
+                            self.close_tool()
+                        if self.current_window != None:
+                            self.close_window()
+                        if self.active_tile != None:
+                            self.active_tile.info_panel = False
+                            self.active_tile = None
 
-                    if self.current_button:
-                        if self.current_button.type == "main":
-                            if self.current_button.is_active():
-                                self.open_menu(self.current_button.menu)
-                                self.menu_location = self.current_button.location
-                        elif self.current_button.type == "tool":
-                            if self.current_button.tool != None:
-                                self.current_tool = self.current_button.tool
-                        elif self.current_button.type == "building":
-                            self.current_tool_building = self.current_button.building
-                            self.current_tool = self.player_tools[2]
-                            self.close_menu()
-                        elif self.current_button.type == "road":
-                            self.current_tool_building = self.current_button.building
-                            self.current_tool = self.player_tools[3]
-                #right click will close menus and exit tools
-                if state[2]:
-                    if self.menu_open:
-                        self.close_menu()
-                    if self.current_tool != None:
-                        self.close_tool()
-                    if self.current_window != None:
-                        self.close_window()
-                    if self.active_tile != None:
-                        self.active_tile.info_panel = False
-                        self.active_tile = None
-
-            if event.type == pygame.MOUSEBUTTONUP:
-                state = pygame.mouse.get_pressed()
-                self.mbdown = False
+                if event.type == pygame.MOUSEBUTTONUP:
+                    state = pygame.mouse.get_pressed()
+                    self.mbdown = False
 
 
-            #if mouse position is on a tile, that tile should be highligted
-            if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
-                if self.mouse_position[0] < self.resx and self.mouse_position[1] < self.resy:
-                    self.mouseovertile = True
-                    #determine what tile is under the mouse
-                    #first determine what tile on screen is under the mouse
-                    tilex = int(self.mouse_position[0]/self.tilesize)
-                    tiley = int(self.mouse_position[1]/self.tilesize)
-                    #then define what is that tile's location on the whole map
-                    maptilex = tilex+self.camera_position[0]
-                    maptiley = tiley+self.camera_position[1]
-                    self.current_tile = self.map[maptilex][maptiley]
+                #if mouse position is on a tile, that tile should be highligted
+                if self.mouse_position[0] >= 0 and self.mouse_position[1] >= 0:
+                    if self.mouse_position[0] < self.resx and self.mouse_position[1] < self.resy:
+                        self.mouseovertile = True
+                        #determine what tile is under the mouse
+                        #first determine what tile on screen is under the mouse
+                        tilex = int(self.mouse_position[0]/self.tilesize)
+                        tiley = int(self.mouse_position[1]/self.tilesize)
+                        #then define what is that tile's location on the whole map
+                        maptilex = tilex+self.camera_position[0]
+                        maptiley = tiley+self.camera_position[1]
+                        self.current_tile = self.map[maptilex][maptiley]
 
 
+                    else:
+                        self.mouseovertile = False
                 else:
                     self.mouseovertile = False
-            else:
-                self.mouseovertile = False
 
-            #if mouse position is on a ui button, set mouseover to that button
-            for button in self.ui_buttons:
-                if self.mouse_position[0] >= button.location[0] and self.mouse_position[0] <= button.location[0]+button.size[0]:
-                    if self.mouse_position[1] >= button.location[1] and self.mouse_position[1] <= button.location[1]+button.size[1]:
-                        self.mouseoverbutton = True
-                        self.mouseovertile = False
-                        self.current_button = button
-                        self.tooltip_active = True
-                        break
-                    else:
-                        self.mouseoverbutton = False
-                        self.current_button = None
-                        self.tooltip_active = False
-                else:
-                    self.mouseoverbutton = False
-                    self.current_button = None
-                    self.tooltip_active = False
-
-            #same for menu buttons
-            if self.menu_open:
-                for button in self.ui_menu_buttons:
+                #if mouse position is on a ui button, set mouseover to that button
+                for button in self.ui_buttons:
                     if self.mouse_position[0] >= button.location[0] and self.mouse_position[0] <= button.location[0]+button.size[0]:
                         if self.mouse_position[1] >= button.location[1] and self.mouse_position[1] <= button.location[1]+button.size[1]:
                             self.mouseoverbutton = True
@@ -610,63 +578,83 @@ class StrategyGame():
                         self.mouseoverbutton = False
                         self.current_button = None
                         self.tooltip_active = False
+
+                #same for menu buttons
+                if self.menu_open:
+                    for button in self.ui_menu_buttons:
+                        if self.mouse_position[0] >= button.location[0] and self.mouse_position[0] <= button.location[0]+button.size[0]:
+                            if self.mouse_position[1] >= button.location[1] and self.mouse_position[1] <= button.location[1]+button.size[1]:
+                                self.mouseoverbutton = True
+                                self.mouseovertile = False
+                                self.current_button = button
+                                self.tooltip_active = True
+                                break
+                            else:
+                                self.mouseoverbutton = False
+                                self.current_button = None
+                                self.tooltip_active = False
+                        else:
+                            self.mouseoverbutton = False
+                            self.current_button = None
+                            self.tooltip_active = False
             
 
         #check if player input is doing anything
         #check if player input is doing anything
         #check if player input is doing anything
 
-        #is the camera moving
-        if self.camera_up:
-            self.move_camera("up")
-        if self.camera_down:
-            self.move_camera("down")
-        if self.camera_left:
-            self.move_camera("left")
-        if self.camera_right:
-            self.move_camera("right")
+        if self.gameover == False:
+            #is the camera moving
+            if self.camera_up:
+                self.move_camera("up")
+            if self.camera_down:
+                self.move_camera("down")
+            if self.camera_left:
+                self.move_camera("left")
+            if self.camera_right:
+                self.move_camera("right")
 
-        #check if windows are open
-        for button in self.ui_buttons:
-            if button.type == "window":
-                if button.active:
-                    self.current_window = button.window
-                else:
-                    self.current_window = None
+            #check if windows are open
+            for button in self.ui_buttons:
+                if button.type == "window":
+                    if button.active:
+                        self.current_window = button.window
+                    else:
+                        self.current_window = None
 
-        #if tile info is shown
-        if self.active_tile != None:
-            if self.current_tile != self.active_tile:
-                self.active_tile.info_panel = False
-                self.active_tile = None
+            #if tile info is shown
+            if self.active_tile != None:
+                if self.current_tile != self.active_tile:
+                    self.active_tile.info_panel = False
+                    self.active_tile = None
 
 
-        #increase timer for tiles with a building
-        #this is used to determine if the tile is producing something
-        #check if a second has passed
-        if self.timer >= 60:
-            for tile in self.tiles_with_buildings:
-                #check if tile has building
-                if tile.building != None and tile.has_road() == False:
-                    #check if building is production or gather building
-                    if tile.building.type == "produce" or tile.building.type == "gather":
-                        #check if production interval is reached
-                        if tile.timer >= tile.building.production[1]-1:
-                            #produce goods for tile
-                            #the produce goods method will determine whether tile building is eligible to produce
-                            self.produce_goods(tile)
-                            #reset the timer for the tile
-                            tile.set_timer(0)
-                        else:
-                            #otherwise increase tile timer
-                            tile.timer += 1
-                    elif tile.building.type == "house":
-                        #citizens need goods every 5 minutes (300 seconds)
-                        for need in tile.needs:
-                            if tile.needs[need] >= 299:
-                                self.consume_goods(tile)
+            #increase timer for tiles with a building
+            #this is used to determine if the tile is producing something
+            #check if a second has passed
+            if self.timer >= 60:
+                for tile in self.tiles_with_buildings:
+                    #check if tile has building
+                    if tile.building != None and tile.has_road() == False:
+                        #check if building is production or gather building
+                        if tile.building.type == "produce" or tile.building.type == "gather":
+                            #check if production interval is reached
+                            if tile.timer >= tile.building.production[1]-1:
+                                #produce goods for tile
+                                #the produce goods method will determine whether tile building is eligible to produce
+                                self.produce_goods(tile)
+                                #reset the timer for the tile
+                                tile.set_timer(0)
                             else:
-                                tile.need_timer(need, 1)
+                                #otherwise increase tile timer
+                                tile.timer += 1
+                        elif tile.building.type == "house":
+                            #citizens need goods every 5 minutes (300 seconds)
+                            for need in tile.needs:
+                                if tile.needs[need] >= 299:
+                                    self.consume_goods(tile)
+                                else:
+                                    tile.need_timer(need, 1)
                         
     def create_map(self, map: list):
         
@@ -1221,6 +1209,12 @@ class StrategyGame():
         text = self.font_arial_small.render(button.info, True, self.black)
         frame_text = self.screen.blit(text,(x+5, y+5))
         icon = button.graphic
+
+    def game_over(self):
+        self.gameover = True
+        self.speed = 0
+    
+
 
     def highlight_button(self, button):
         #this method is called when a button needs to be highlighted
